@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Modal from './components/Modal';
+import { usePatients } from './context/PatientContext.jsx'; // Importar o hook
 import './layout.css';
+import logger from './utils/logger';
 
 /**
  * Layout component providing a sidebar navigation and a content area.
@@ -12,8 +15,10 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const name = localStorage.getItem('name') || '';
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const { hasPatients, loading } = usePatients(); // Usar o contexto
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  function handleLogout() {
+  const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('name');
     localStorage.removeItem('isAdmin');
@@ -28,7 +33,19 @@ export default function Layout({ children }) {
         </div>
         <nav className="nav-links">
           <Link to="/dashboard">Minhas Solicitações</Link>
-          <Link to="/new-request">Enviar Crédito</Link>
+          <Link to="/patients">Pacientes</Link>
+          <Link
+            to="/new-request"
+            onClick={(e) => {
+              if (!loading && !hasPatients) { // Verificar se não está carregando
+                e.preventDefault();
+                setIsModalOpen(true);
+              }
+            }}
+            style={{ pointerEvents: loading ? 'none' : 'auto' }} // Desabilitar clique enquanto carrega
+          >
+            Comprar Crédito
+          </Link>
           {isAdmin && <Link to="/admin-dashboard">Painel do Admin</Link>}
           {isAdmin && <Link to="/requests">Todas Solicitações</Link>}
         </nav>
@@ -38,7 +55,34 @@ export default function Layout({ children }) {
           <button className="logout" onClick={handleLogout}>Sair</button>
         </div>
       </aside>
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        {children}
+      </main>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Atenção"
+      >
+        <p>Para comprar créditos, você precisa primeiro cadastrar um paciente.</p>
+        <button
+          onClick={() => {
+            setIsModalOpen(false);
+            navigate('/patients');
+          }}
+          style={{
+            backgroundColor: '#2e86de',
+            color: 'white',
+            padding: '10px 20px',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            marginTop: '1rem'
+          }}
+        >
+          Cadastrar Paciente
+        </button>
+      </Modal>
     </div>
   );
 }

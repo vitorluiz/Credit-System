@@ -10,6 +10,9 @@ import Dashboard from './Dashboard.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
 import Requests from './Requests.jsx';
 import NewRequest from './NewRequest.jsx';
+import PixGeneration from './PixGeneration.jsx';
+import Patients from './Patients.jsx';
+import { PatientProvider } from './context/PatientContext.jsx'; // Importar o Provider
 import './style.css';
 
 // Root of the React application. Defines routes for each page. When
@@ -17,18 +20,22 @@ import './style.css';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/activate" element={<Activate />} />
-        <Route path="/first-access" element={<FirstAccess />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/requests" element={<Requests />} />
-        <Route path="/new-request" element={<NewRequest />} />
-      </Routes>
+      <PatientProvider> {/* Envolver as rotas com o Provider */}
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/activate" element={<Activate />} />
+          <Route path="/first-access" element={<FirstAccess />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/requests" element={<Requests />} />
+          <Route path="/new-request" element={<NewRequest />} />
+          <Route path="/generate-pix" element={<PixGeneration />} />
+          <Route path="/patients" element={<Patients />} />
+        </Routes>
+      </PatientProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

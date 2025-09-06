@@ -34,6 +34,9 @@ export default function Register() {
 
   return (
     <div className="container">
+      <div className="logo-container" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <img src="/LogoFlorais.png" alt="Logo Florais" style={{ maxWidth: '200px', height: 'auto' }} />
+      </div>
       <h1>Criar conta</h1>
       <form onSubmit={handleSubmit}>
         <label htmlFor="name">Nome</label>

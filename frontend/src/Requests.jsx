@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from './Layout.jsx';
-import RequestDetailsModal from './RequestDetailsModal.jsx';
+import RequestDetailsModal from './components/RequestDetailsModal.jsx';
+import './Requests.css';
 
 /**
  * Requests page. Displays a searchable and filterable list of credit
@@ -111,7 +113,17 @@ export default function Requests() {
               ))}
             </div>
             {selectedRequest && (
-              <RequestDetailsModal request={selectedRequest} onClose={() => setSelectedRequest(null)} />
+              <RequestDetailsModal 
+                request={selectedRequest} 
+                onClose={() => setSelectedRequest(null)}
+                onStatusUpdate={(id, newStatus) => {
+                  // Atualiza o status localmente
+                  setRequests(prev => prev.map(req => 
+                    req.id === id ? { ...req, status: newStatus } : req
+                  ));
+                  setSelectedRequest(prev => prev ? { ...prev, status: newStatus } : null);
+                }}
+              />
             )}
           </>
         )}
