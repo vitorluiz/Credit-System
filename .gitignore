@@ -36,9 +36,6 @@ coverage/
 *.seed
 *.tgz
 
-# Docker
-**/.dockerignore
-
 # Vite cache
 frontend/.vite/
 
