@@ -29,7 +29,8 @@ export default function Layout({ children }) {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="logo">
-          <span role="img" aria-label="logo">📄</span> Gestão de Crédito Super. Florais
+          <img src="/LogoFloraisMin.png" alt="Logo Supermercado Florais" />
+          <span>Gestão de Crédito</span>
         </div>
         <nav className="nav-links">
           <Link to="/dashboard">Minhas Solicitações</Link>

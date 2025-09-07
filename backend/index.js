@@ -8,20 +8,28 @@
  * after successful authentication.
  */
 
-const express = require('express');
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const path = require('path');
-const crypto = require('crypto');
-const { Pool } = require('pg');
-const nodemailer = require('nodemailer');
-const axios = require('axios');
+import express from 'express';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import path from 'path';
+import crypto from 'crypto';
+import pg from 'pg';
+import nodemailer from 'nodemailer';
+import axios from 'axios';
+import { config as loadEnv } from 'dotenv';
+import PixService from './src/services/PixService.js';
+import pixRoutes from './src/routes/pixRoutes.js';
+import { fileURLToPath } from 'url';
 
-// Importar módulos organizados
-const pixRoutes = require('./src/routes/pixRoutes');
-const PixService = require('./src/services/PixService');
-const { authenticateRequestLegacy } = require('./src/middleware/auth');
+// Carrega env padrão
+loadEnv();
+// Fallback: tenta carregar .env no diretório do backend e no diretório raiz do projeto
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: path.join(__dirname, '.env'), override: false });
+loadEnv({ path: path.join(__dirname, '..', '.env'), override: false });
+
+const { Pool } = pg;
 
 // Environment configuration. Docker will override these values via
 // docker‑compose.yml, but default values are provided for local
@@ -36,10 +44,7 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || SMTP_PORT === 465;
 
-// ASAAS Configuration
-const ASAAS_API_TOKEN = process.env.ASAAS_API_TOKEN;
-const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || 'https://sandbox.asaas.com/api/v3'; // Default para SANDBOX
-const ASAAS_PIX_KEY = process.env.ASAAS_PIX_KEY;
+// ASAAS removido
 
 // PIX Estático Configuration
 const STATIC_PIX_KEY = process.env.STATIC_PIX_KEY || 'pix@supermercadoflorais.com.br';
@@ -47,7 +52,7 @@ const STATIC_PIX_KEY = process.env.STATIC_PIX_KEY || 'pix@supermercadoflorais.co
 // Create a connection pool. When running in Docker the host will
 // resolve to the service name `db` defined in docker‑compose.yml.
 const pool = new Pool({
-  host: process.env.PGHOST || 'localhost',
+  host: process.env.PGHOST || 'db',
   port: Number(process.env.PGPORT) || 5432,
   user: process.env.PGUSER || 'postgres',
   password: process.env.PGPASSWORD || 'postgres',
@@ -85,7 +90,7 @@ async function ensureSchema() {
       payer_name VARCHAR(255) NOT NULL,
       payer_cpf VARCHAR(20) NOT NULL,
       receiver_name VARCHAR(255) NOT NULL,
-      receiver_cpf VARCHAR(20) NOT NULL,
+      receiver_cpf VARCHAR(20),
       amount NUMERIC(12, 2) NOT NULL,
       payment_method VARCHAR(20) NOT NULL,
       status VARCHAR(20) NOT NULL DEFAULT 'Pendente',
@@ -103,7 +108,7 @@ async function ensureSchema() {
       id SERIAL PRIMARY KEY,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       full_name VARCHAR(255) NOT NULL,
-      cpf VARCHAR(20) NOT NULL,
+      cpf VARCHAR(20),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -148,6 +153,15 @@ async function ensureSchema() {
     ALTER TABLE credit_requests
     ADD COLUMN IF NOT EXISTS transaction_id VARCHAR(100);
   `);
+  await pool.query(`
+    ALTER TABLE patients
+    ADD COLUMN IF NOT EXISTS cpf VARCHAR(20),
+    ALTER COLUMN cpf DROP NOT NULL;
+  `);
+  await pool.query(`
+    ALTER TABLE credit_requests
+    ALTER COLUMN receiver_cpf DROP NOT NULL;
+  `);
 }
 
 // Wait for the database to be ready before attempting to create
@@ -184,22 +198,30 @@ app.use(cors());
 app.use(express.json());
 
 // Instanciar serviços
-const pixService = new PixService();
+const pixService = new PixService({
+  staticPixKey: process.env.STATIC_PIX_KEY,
+  merchantName: process.env.MERCHANT_NAME || 'SUPERMERCADO FLORAIS',
+  merchantCity: process.env.MERCHANT_CITY || 'CUIABA',
+});
 
 // Configurar rotas
 app.use('/api/pix', pixRoutes);
 // Serve static media uploads at /media
 app.use('/media', express.static(path.resolve('uploads')));
 
-/*
- * Helper function to authenticate a request based on the Authorization
- * header. If successful, resolves with the decoded token payload.
- * 
- * @deprecated Use authenticateRequestLegacy from middleware/auth.js instead
- */
-async function authenticateRequest(req) {
-  return authenticateRequestLegacy(req);
-}
+// Middleware de autenticação (simplificado para o exemplo)
+const authenticateRequest = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
 
 /*
  * POST /api/register
@@ -209,9 +231,9 @@ async function authenticateRequest(req) {
  * mundo real seria enviado por email).
  */
 app.post('/api/register', async (req, res) => {
-  const { name, email } = req.body;
-  if (!name || !email) {
-    return res.status(400).json({ message: 'Nome e email são obrigatórios.' });
+  const { name, email, phone } = req.body;
+  if (!name || !email || !phone) {
+    return res.status(400).json({ message: 'Nome, email e telefone são obrigatórios.' });
   }
   try {
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -223,8 +245,8 @@ app.post('/api/register', async (req, res) => {
     const isAdmin = count === 0; // primeiro usuário vira admin
     const activationToken = crypto.randomBytes(24).toString('hex');
     await pool.query(
-      'INSERT INTO users (name, email, is_admin, activated, activation_token) VALUES ($1, $2, $3, $4, $5)',
-      [name, email, isAdmin, false, activationToken]
+      'INSERT INTO users (name, email, phone, is_admin, activated, activation_token) VALUES ($1, $2, $3, $4, $5, $6)',
+      [name, email, phone, isAdmin, false, activationToken]
     );
     // Send activation email if SMTP configured; else return link for testing
     const activationUrl = `${APP_BASE_URL}/activate?token=${activationToken}&mode=register`;
@@ -258,12 +280,11 @@ app.post('/api/register', async (req, res) => {
  * GET /api/patients
  * Lista pacientes do usuário autenticado
  */
-app.get('/api/patients', async (req, res) => {
+app.get('/api/patients', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     const result = await pool.query(
       'SELECT id, full_name, cpf FROM patients WHERE user_id = $1 ORDER BY created_at DESC',
-      [payload.id] // Correção: de payload.user_id para payload.id
+      [req.user.id] // Correção: de req.user.user_id para req.user.id
     );
     return res.json(result.rows);
   } catch (err) {
@@ -276,18 +297,17 @@ app.get('/api/patients', async (req, res) => {
  * POST /api/patients
  * Cria um paciente vinculado ao usuário
  */
-app.post('/api/patients', async (req, res) => {
+app.post('/api/patients', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     const { fullName, cpf } = req.body;
 
-    if (!fullName || !cpf) {
-      return res.status(400).json({ message: 'Nome completo e CPF são obrigatórios.' });
+    if (!fullName) {
+      return res.status(400).json({ message: 'Nome completo é obrigatório.' });
     }
 
     const insert = await pool.query(
       'INSERT INTO patients (user_id, full_name, cpf) VALUES ($1, $2, $3) RETURNING id, full_name, cpf',
-      [payload.id, fullName, cpf] // Correção: de payload.user_id para payload.id
+      [req.user.id, fullName, cpf] // Correção: de req.user.user_id para req.user.id
     );
 
     return res.status(201).json(insert.rows[0]);
@@ -395,7 +415,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '8h' });
-    const needsFirstAccess = !user.cpf || !user.phone;
+    const needsFirstAccess = !user.cpf; // Apenas CPF é verificado agora
     return res.json({ token, name: user.name, isAdmin: user.is_admin, needsFirstAccess });
   } catch (err) {
     console.error('Error in /api/login:', err);
@@ -433,11 +453,10 @@ app.post('/api/reset-password', async (req, res) => {
  * `Authorization` header with a valid JWT. Responds with 401 if the
  * token is missing or invalid.
  */
-app.get('/api/me', async (req, res) => {
+app.get('/api/me', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     // Retrieve the latest user info from the database in case data has changed.
-    const result = await pool.query('SELECT id, name, email, phone, cpf, is_admin, created_at FROM users WHERE id = $1', [payload.id]);
+    const result = await pool.query('SELECT id, name, email, phone, cpf, is_admin, created_at FROM users WHERE id = $1', [req.user.id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found.' });
     }
@@ -457,28 +476,29 @@ app.get('/api/me', async (req, res) => {
  * creator of the request. A status of 'Pendente' is assigned by
  * default.
  */
-app.post('/api/requests', async (req, res) => {
+app.post('/api/requests', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     const { payerName, payerCpf, receiverName, receiverCpf, amount, paymentMethod, description } = req.body;
-    if (!payerName || !payerCpf || !receiverName || !receiverCpf || !amount || !paymentMethod) {
-      return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+    
+    if (paymentMethod !== 'PIX') {
+      return res.status(400).json({ message: 'Este endpoint aceita apenas PIX como método de pagamento.' });
+    }
+    
+    if (!payerName || !payerCpf || !receiverName || !amount) {
+      return res.status(400).json({ message: 'Todos os campos obrigatórios, exceto CPF do paciente, devem ser preenchidos.' });
     }
 
-    let pixData = null;
-    let txid = null;
+    const pixData = pixService.generateStaticPix(
+      amount,
+      '' // descrição vazia para não incluir texto no BR Code
+    );
 
-    // Se o método for PIX, gera os dados antes de inserir no banco
-    if (paymentMethod === 'PIX') {
-      pixData = pixService.generateStaticPix(parseFloat(amount), description || `Pagamento para ${receiverName}`);
-      txid = pixData.transactionId;
-    }
+    const qrCodeDataURL = await pixService.getQRCodeDataURL(pixData.pixCode);
 
-    // Insere a nova solicitação e o txid (se houver)
     const result = await pool.query(
       `INSERT INTO credit_requests (payer_name, payer_cpf, receiver_name, receiver_cpf, amount, payment_method, creator_id, transaction_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [payerName, payerCpf, receiverName, receiverCpf, Number(amount), paymentMethod, payload.id, txid]
+      [payerName, payerCpf, receiverName, receiverCpf, Number(amount), paymentMethod, req.user.id, pixData.transactionId]
     );
 
     const newRequestId = result.rows[0].id;
@@ -486,8 +506,9 @@ app.post('/api/requests', async (req, res) => {
     return res.status(201).json({ 
       message: 'Solicitação de crédito criada com sucesso.',
       requestId: newRequestId,
-      pixData: pixData // Retorna os dados do PIX para o frontend
+      pixData: { ...pixData, qrCodeDataURL }
     });
+
   } catch (err) {
     console.error('Error in /api/requests [POST]:', err);
     return res.status(500).json({ message: 'Internal server error.' });
@@ -502,10 +523,9 @@ app.post('/api/requests', async (req, res) => {
  * regardless of who created them. Requests are returned in
  * reverse chronological order.
  */
-app.get('/api/requests', async (req, res) => {
+app.get('/api/requests', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
-    const isAdmin = payload.is_admin === true || payload.is_admin === 'true';
+    const isAdmin = req.user.is_admin === true || req.user.is_admin === 'true';
     const all = req.query.all === 'true';
     let result;
     if (isAdmin && all) {
@@ -522,7 +542,7 @@ app.get('/api/requests', async (req, res) => {
          JOIN users u ON cr.creator_id = u.id
          WHERE cr.creator_id = $1
          ORDER BY cr.created_at DESC`,
-        [payload.id]
+        [req.user.id]
       );
     }
     return res.json(result.rows);
@@ -538,9 +558,8 @@ app.get('/api/requests', async (req, res) => {
  * Returns a single credit request by ID. Only the creator of the
  * request or an admin may view the details.
  */
-app.get('/api/requests/:id', async (req, res) => {
+app.get('/api/requests/:id', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     const requestId = parseInt(req.params.id, 10);
     if (isNaN(requestId)) {
       return res.status(400).json({ message: 'Invalid request ID.' });
@@ -556,8 +575,8 @@ app.get('/api/requests/:id', async (req, res) => {
       return res.status(404).json({ message: 'Solicitação não encontrada.' });
     }
     const request = result.rows[0];
-    const isAdmin = payload.is_admin === true || payload.is_admin === 'true';
-    if (!isAdmin && request.creator_id !== payload.id) {
+    const isAdmin = req.user.is_admin === true || req.user.is_admin === 'true';
+    if (!isAdmin && request.creator_id !== req.user.id) {
       return res.status(403).json({ message: 'Acesso negado.' });
     }
     return res.json(request);
@@ -573,9 +592,8 @@ app.get('/api/requests/:id', async (req, res) => {
  * Regenera e retorna os dados do PIX para uma solicitação existente.
  * Apenas para o criador ou admin, e se o status for 'Pendente'.
  */
-app.get('/api/requests/:id/pix', async (req, res) => {
+app.get('/api/requests/:id/pix', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     const requestId = parseInt(req.params.id, 10);
 
     const result = await pool.query(
@@ -588,9 +606,9 @@ app.get('/api/requests/:id/pix', async (req, res) => {
     }
 
     const request = result.rows[0];
-    const isAdmin = payload.is_admin === true || payload.is_admin === 'true';
+    const isAdmin = req.user.is_admin;
 
-    if (!isAdmin && request.creator_id !== payload.id) {
+    if (!isAdmin && request.creator_id !== req.user.id) {
       return res.status(403).json({ message: 'Acesso negado.' });
     }
 
@@ -606,11 +624,13 @@ app.get('/api/requests/:id/pix', async (req, res) => {
 
     const pixData = pixService.regenerateStaticPix({
       amount: amountAsNumber,
-      description: `Pagamento para ${request.receiver_name}`,
-      txid: request.transaction_id,
+      description: '',
+      txid: '***',
     });
+    
+    const qrCodeDataURL = await pixService.getQRCodeDataURL(pixData.pixCode);
 
-    return res.json(pixData);
+    return res.json({ ...pixData, qrCodeDataURL });
 
   } catch (err) {
     console.error('Error in /api/requests/:id/pix [GET]:', err);
@@ -620,15 +640,20 @@ app.get('/api/requests/:id/pix', async (req, res) => {
 
 
 // Update profile (first access) - sets CPF and phone
-app.post('/api/profile', async (req, res) => {
+app.post('/api/profile', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
-    const { cpf, phone } = req.body;
-    if (!cpf || !phone) return res.status(400).json({ message: 'CPF e telefone são obrigatórios.' });
-    await pool.query('UPDATE users SET cpf = $1, phone = $2 WHERE id = $3', [cpf, phone, payload.id]);
+    const { cpf } = req.body;
+
+    if (!cpf) {
+      return res.status(400).json({ message: 'O CPF é obrigatório.' });
+    }
+    
+    await pool.query('UPDATE users SET cpf = $1 WHERE id = $2', [cpf, req.user.id]);
+
     return res.json({ message: 'Perfil atualizado.' });
   } catch (err) {
-    return res.status(401).json({ message: 'Unauthorized.' });
+    console.error('Error in /api/profile [POST]:', err);
+    return res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });
 
@@ -638,10 +663,9 @@ app.post('/api/profile', async (req, res) => {
  * Updates the status of a credit request. Only admins can update statuses.
  * Valid statuses: Pendente, Pago, Cancelado, Estornado
  */
-app.patch('/api/requests/:id/status', async (req, res) => {
+app.patch('/api/requests/:id/status', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
-    const isAdmin = payload.is_admin === true || payload.is_admin === 'true';
+    const isAdmin = req.user.is_admin === true || req.user.is_admin === 'true';
     
     if (!isAdmin) {
       return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem alterar status.' });
@@ -682,52 +706,16 @@ app.patch('/api/requests/:id/status', async (req, res) => {
 
 /*
  * POST /api/create-static-pix
- * @deprecated Use /api/pix/create-static instead
- * 
- * Mantido para compatibilidade temporária
+ * @deprecated Rota removida. A criação de PIX agora é feita em /api/requests.
  */
-app.post('/api/create-static-pix', async (req, res) => {
-  try {
-    const payload = await authenticateRequest(req);
-    const { payerEmail, payerName, receiverName, receiverCpf, amount } = req.body;
-    
-    if (!payerEmail || !payerName || !receiverName || !amount) {
-      return res.status(400).json({ message: 'Dados incompletos para criar PIX.' });
-    }
-
-    // Usar o novo serviço PIX
-    const pixData = pixService.generateStaticPix(parseFloat(amount), `Pagamento para ${receiverName}`);
-    
-    return res.json({
-      message: 'PIX estático gerado com sucesso!',
-      payment: {
-        type: 'PIX',
-        amount: pixData.amount,
-        receiverName,
-        receiverCpf,
-        pixKey: pixData.pixKey,
-        pixCode: pixData.pixCode,
-        qrCodeUrl: pixData.qrCodeUrl,
-        transactionId: pixData.transactionId,
-        instructions: 'Após realizar o pagamento, envie o comprovante para confirmação.'
-      },
-      provider: 'STATIC_PIX'
-    });
-
-  } catch (err) {
-    console.error('Error in /api/create-static-pix [POST]:', err);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
-  }
-});
 
 /*
  * POST /api/upload-receipt
  *
  * Upload receipt for PIX payment confirmation
  */
-app.post('/api/upload-receipt', async (req, res) => {
+app.post('/api/upload-receipt', authenticateRequest, async (req, res) => {
   try {
-    const payload = await authenticateRequest(req);
     const { requestId, receiptData, receiptType } = req.body;
     
     if (!requestId || !receiptData) {
@@ -735,15 +723,15 @@ app.post('/api/upload-receipt', async (req, res) => {
     }
 
     // Verificar se a solicitação existe e pertence ao usuário ou é admin
-    const isAdmin = payload.is_admin === true || payload.is_admin === 'true';
+    const isAdmin = req.user.is_admin === true || req.user.is_admin === 'true';
     let query, params;
     
     if (isAdmin) {
       query = 'SELECT id, status FROM credit_requests WHERE id = $1';
       params = [requestId];
     } else {
-      query = 'SELECT id, status FROM credit_requests WHERE id = $1 AND user_id = $2';
-      params = [requestId, payload.id];
+      query = 'SELECT id, status FROM credit_requests WHERE id = $1 AND creator_id = $2';
+      params = [requestId, req.user.id];
     }
     
     const requestResult = await pool.query(query, params);
@@ -769,177 +757,8 @@ app.post('/api/upload-receipt', async (req, res) => {
   }
 });
 
-// Função para criar PIX via ASAAS
-async function createAsaasPix(data) {
-  const customerData = await createOrGetAsaasCustomer({
-    name: data.payerName,
-    email: data.payerEmail
-  });
-
-  const paymentPayload = {
-    customer: customerData.id,
-    billingType: 'PIX',
-    value: data.amount,
-    dueDate: new Date().toISOString().split('T')[0],
-    description: `Pagamento para ${data.receiverName}`,
-    pixAddressKey: ASAAS_PIX_KEY
-  };
-
-  const response = await axios.post(`${ASAAS_BASE_URL}/payments`, paymentPayload, {
-    headers: {
-      'access_token': ASAAS_API_TOKEN,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  const payment = response.data;
-  
-  // Buscar dados do PIX
-  const pixResponse = await axios.get(`${ASAAS_BASE_URL}/payments/${payment.id}/pixQrCode`, {
-    headers: { 'access_token': ASAAS_API_TOKEN }
-  });
-
-  return {
-    type: 'PIX',
-    id: payment.id,
-    amount: payment.value,
-    receiverName: data.receiverName,
-    pixCode: pixResponse.data.payload,
-    qrCodeUrl: pixResponse.data.encodedImage,
-    status: payment.status,
-    dueDate: payment.dueDate
-  };
-}
-
-// Função para criar Boleto via ASAAS
-async function createAsaasBoleto(data) {
-  const customerData = await createOrGetAsaasCustomer({
-    name: data.payerName,
-    email: data.payerEmail,
-    cpfCnpj: data.receiverCpf
-  });
-
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 3);
-
-  const paymentPayload = {
-    customer: customerData.id,
-    billingType: 'BOLETO',
-    value: data.amount,
-    dueDate: dueDate.toISOString().split('T')[0],
-    description: `Pagamento para ${data.receiverName}`,
-    externalReference: `BOLETO-${Date.now()}`
-  };
-
-  const response = await axios.post(`${ASAAS_BASE_URL}/payments`, paymentPayload, {
-    headers: {
-      'access_token': ASAAS_API_TOKEN,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  const payment = response.data;
-
-  return {
-    type: 'Boleto',
-    id: payment.id,
-    amount: payment.value,
-    receiverName: data.receiverName,
-    receiverCpf: data.receiverCpf,
-    barcodeNumber: payment.bankSlipUrl ? 'Ver link para código' : generateBarcodeNumber(data.amount),
-    dueDate: payment.dueDate,
-    documentNumber: payment.nossoNumero || payment.id,
-    bankSlipUrl: payment.bankSlipUrl,
-    status: payment.status
-  };
-}
-
-// Função para criar ou buscar cliente no ASAAS
-async function createOrGetAsaasCustomer(customerData) {
-  try {
-    // Tentar buscar cliente existente por email
-    const searchResponse = await axios.get(`${ASAAS_BASE_URL}/customers`, {
-      headers: { 'access_token': ASAAS_API_TOKEN },
-      params: { email: customerData.email }
-    });
-
-    if (searchResponse.data.data && searchResponse.data.data.length > 0) {
-      return searchResponse.data.data[0];
-    }
-
-    // Se não existir, criar novo cliente
-    const createResponse = await axios.post(`${ASAAS_BASE_URL}/customers`, {
-      name: customerData.name,
-      email: customerData.email,
-      cpfCnpj: customerData.cpfCnpj
-    }, {
-      headers: {
-        'access_token': ASAAS_API_TOKEN,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    return createResponse.data;
-  } catch (err) {
-    console.error('Erro ao criar/buscar cliente ASAAS:', err);
-    throw err;
-  }
-}
-
-// Fallback para sistema fake
-async function handleFakePayment(req, res) {
-  const { payerEmail, payerName, receiverName, amount, paymentMethod } = req.body;
-  
-  let paymentData;
-  if (paymentMethod === 'PIX') {
-    paymentData = {
-      type: 'PIX',
-      amount: parseFloat(amount),
-      receiverName,
-      pixCode: generatePixCode(amount, `Pagamento para ${receiverName}`),
-      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixCode(amount, `Pagamento para ${receiverName}`))}`
-    };
-  } else {
-    paymentData = {
-      type: 'Boleto',
-      amount: parseFloat(amount),
-      receiverName,
-      barcodeNumber: generateBarcodeNumber(amount),
-      dueDate: getNextBusinessDay(),
-      documentNumber: `BOL${Date.now().toString().slice(-8)}`
-    };
-  }
-
-  // Enviar email se configurado
-  let emailSent = false;
-  if (SMTP_HOST && SMTP_USER && SMTP_PASS && paymentMethod === 'Boleto') {
-    try {
-      await sendBoletoNotificationEmail({
-        payerEmail,
-        payerName,
-        receiverName,
-        amount: parseFloat(amount)
-      });
-      emailSent = true;
-    } catch (emailErr) {
-      console.error('Erro ao enviar email:', emailErr);
-    }
-  }
-
-  return res.json({
-    message: 'Pagamento criado (sistema local)!',
-    payment: { ...paymentData, emailSent },
-    provider: 'LOCAL'
-  });
-}
-
 // Funções PIX movidas para src/services/PixService.js
-
-function generatePixCode(value, desc) {
-  const timestamp = Date.now();
-  const mockKey = "pix@superflorais.com.br";
-  return `00020126580014BR.GOV.BCB.PIX0136${mockKey}520400005303986540${parseFloat(value).toFixed(2)}5802BR5925Gestao Credito Super Flora6009SAO PAULO62070503${timestamp.toString().slice(-6)}6304`;
-}
+// A função generatePixCode foi removida pois agora usamos o PixService.
 
 function generateBarcodeNumber(amount) {
   const bankCode = "001";

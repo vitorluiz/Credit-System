@@ -1,10 +1,10 @@
 /**
  * Authentication Middleware
  * 
- * Middleware para autenticação de rotas
+ * Middleware para autenticação de rotas (ES Modules)
  */
 
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
@@ -14,7 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
  * @param {Response} res - Response object  
  * @param {Function} next - Next middleware function
  */
-async function authenticateRequest(req, res, next) {
+export async function authenticateRequest(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
     
@@ -66,7 +66,7 @@ async function authenticateRequest(req, res, next) {
  * @param {Response} res - Response object  
  * @param {Function} next - Next middleware function
  */
-function requireAdmin(req, res, next) {
+export function requireAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ 
       message: 'Autenticação necessária.' 
@@ -89,7 +89,7 @@ function requireAdmin(req, res, next) {
  * @param {Request} req - Request object
  * @returns {Promise<Object>} JWT payload
  */
-async function authenticateRequestLegacy(req) {
+export async function authenticateRequestLegacy(req) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -114,9 +114,3 @@ async function authenticateRequestLegacy(req) {
     throw err;
   }
 }
-
-module.exports = {
-  authenticateRequest,
-  requireAdmin,
-  authenticateRequestLegacy
-};

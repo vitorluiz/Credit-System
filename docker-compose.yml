@@ -32,10 +32,9 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
       SMTP_SECURE: ${SMTP_SECURE}
-      ASAAS_API_TOKEN: ${ASAAS_API_TOKEN}
-      ASAAS_BASE_URL: ${ASAAS_BASE_URL}
-      ASAAS_PIX_KEY: ${ASAAS_PIX_KEY}
       STATIC_PIX_KEY: ${STATIC_PIX_KEY}
+      MERCHANT_NAME: ${MERCHANT_NAME}
+      MERCHANT_CITY: ${MERCHANT_CITY}
     depends_on:
       db:
         condition: service_healthy

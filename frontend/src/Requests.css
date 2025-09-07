@@ -18,3 +18,144 @@
 .request-item:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
+/* Details modal styles */
+.details-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.details-modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 720px;
+  position: relative;
+}
+
+.details-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.details-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.details-row {
+  margin-top: 0.75rem;
+}
+
+.muted {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.flash {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.flash.success {
+  background-color: #e6ffe6;
+  color: #27ae60;
+}
+.flash.error {
+  background-color: #ffe6e6;
+  color: #c0392b;
+}
+
+/* PIX section */
+.pix-details-modal {
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+}
+.qr-image {
+  display: block;
+  max-width: 220px;
+  width: 100%;
+  margin: 0.5rem auto 1rem;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+.qr-fallback {
+  text-align: center;
+  color: #888;
+  padding: 0.75rem;
+  border: 1px dashed #ccc;
+  border-radius: 6px;
+}
+.pix-label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.pix-code-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+  font-family: monospace;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.pix-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+.btn-copy, .btn-primary {
+  background-color: #2e86de;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-copy:hover, .btn-primary:hover {
+  filter: brightness(0.95);
+}
+.status-actions {
+  margin-top: 1.5rem; 
+  border-top: 1px solid #eee; 
+  padding-top: 1rem;
+}
+.status-buttons {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+}
+.btn-status {
+  color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+}
+.final-info {
+  margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; background-color: #f8f9fa; padding: 1rem; border-radius: 4px; color: #6c757d;
+}

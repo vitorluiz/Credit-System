@@ -1,3 +1,175 @@
+Beleza — vasculhei seu arquivo e tem alguns pontos (de lógica e de aderência ao padrão do BR Code/PIX) que explicam “por que está errado” ou por que pode falhar/gerar payload inválido. 
+
+PixService
+
+O que está errado (ou frágil)
+
+regenerateStaticPix nunca usa o txid
+
+Você passa { txid } para _generateBRCode, mas o método _generateBRCode não tem esse parâmetro na assinatura e força txId = '***'. Resultado: qualquer txid fornecido é ignorado e o BR Code sai sempre com ***.
+
+Além disso, o JSDoc de _generateBRCode menciona txId como parâmetro, mas ele não existe na função — documentação divergente do código.
+
+Valor do campo 54 (Amount) com formatação local em regenerateStaticPix
+
+Em generateStaticPix você manda amount.toFixed(2) → correto para EMV/BR Code (54 exige ponto decimal, e sem símbolo de moeda).
+
+Em regenerateStaticPix você usa this.formatCurrency(amount) → isso gera algo como R$ 1.234,56 (vírgula, símbolo), o que quebra o BR Code (campo 54). O valor precisa ser 1234.56.
+
+Ausência do campo “Point of Initiation Method” (ID 01)
+
+Para QR estático, recomenda-se incluir 01=11. Para dinâmico, 01=12. Seu payload não inclui 01, o que pode causar rejeição em leitores mais estritos.
+
+Comprimento TLV genérico e risco >99
+
+_formatField sempre formata o comprimento com 2 dígitos. Se algum sub-bloco (por ex. o Template 26 inteiro) ultrapassar 99 chars, o TLV fica inválido. Você já limita merchantName (25) e merchantCity (15) e a description (140), então é raro, mas o Template 26 pode estourar dependendo do tamanho da chave + descrição. Falta uma validação dura para garantir que nenhum bloco passe de 99.
+
+generateStaticPix não valida amount
+
+Se amount chegar como string ou NaN, toFixed(2) vai explodir ou gerar lixo. Falta um Number(amount) + checagem de finitude/valor > 0.
+
+Segurança/privacidade do QR
+
+_generateQRCodeUrl usa um serviço público (api.qrserver.com) e vaza o payload do BR Code para terceiros. Tecnicamente funciona, mas é risco de exposição (dados sensíveis como descrição/identificador podem aparecer). Ideal: gerar o QR localmente (ex.: qrcode lib) ou no front.
+
+Inconsistências de retorno
+
+regenerateStaticPix retorna amount “como veio” (pode ser número), enquanto o pixCode foi gerado (errado) com formatCurrency. Também não retorna a description, ao contrário de generateStaticPix que retorna description.
+
+Validação de chave PIX só “superficial”
+
+Aceita telefone +55 com 10 ou 11 dígitos depois do DDD. As chaves PIX pedem E.164 válido (geralmente 11 dígitos nacionais para celular). Não é “erro” fatal, mas pode passar chaves inválidas.
+
+Como corrigir (patch rápido)
+
+A) Passe e use txid corretamente + amount sempre em formato BR Code
+
+Ajuste a assinatura de _generateBRCode para aceitar txid e não fixar *** quando txid for fornecido:
+
+```js
+// Substitua a assinatura e uso:
+_generateBRCode({ pixKey, amount, description, txid = '***' }) {
+  const payloadFormatIndicator = this._formatField('00', '01');
+
+  const merchantAccountInformation = this._formatField('26', [
+    this._formatField('00', 'br.gov.bcb.pix'),
+    this._formatField('01', pixKey),
+    ...(description ? [this._formatField('02', this._normalizeText(description, 140))] : []),
+  ].join(''));
+
+  // Campo 01 = Point of Initiation Method (11 = estático)
+  const poiMethod = this._formatField('01', '11');
+
+  const merchantCategoryCode = this._formatField('52', '0000');
+  const transactionCurrency = this._formatField('53', '986');
+
+  // amount deve estar no formato 1234.56 (ponto, sem "R$")
+  const normalizedAmount = this._normalizeAmount(amount);
+  const transactionAmount = normalizedAmount ? this._formatField('54', normalizedAmount) : '';
+
+  const countryCode = this._formatField('58', 'BR');
+  const merchantName = this._formatField('59', this._normalizeText(this.merchantName, 25));
+  const merchantCity = this._formatField('60', this._normalizeText(this.merchantCity, 15));
+
+  const additionalDataFieldTemplate = this._formatField('62', this._formatField('05', txid));
+
+  const payload = [
+    payloadFormatIndicator,
+    poiMethod,
+    merchantAccountInformation,
+    merchantCategoryCode,
+    transactionCurrency,
+    transactionAmount,
+    countryCode,
+    merchantName,
+    merchantCity,
+    additionalDataFieldTemplate,
+  ].join('');
+
+  const payloadWithCRC = payload + '6304';
+  const crc = this._calculateCRC16(payloadWithCRC);
+  return payloadWithCRC + crc;
+}
+
+```
+E crie um normalizador seguro de valor:
+
+```js
+_normalizeAmount(amount) {
+  if (amount === undefined || amount === null) return '';
+  const num = typeof amount === 'number' ? amount : Number(
+    String(amount)
+      .replace(/[R$\s]/g, '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+  );
+  if (!isFinite(num) || num <= 0) return '';
+  return num.toFixed(2); // sempre com ponto
+}
+
+```
+B) Consertar regenerateStaticPix para usar o txid e não formatCurrency:
+
+```js
+regenerateStaticPix({ amount, description, txid }) {
+  const pixKey = this.staticPixKey;
+  const pixCode = this._generateBRCode({
+    pixKey,
+    amount,          // deixe bruto; _normalizeAmount cuida
+    description,
+    txid,            // agora é usado de verdade
+  });
+  const qrCodeUrl = this._generateQRCodeUrl(pixCode);
+
+  return {
+    amount: this._normalizeAmount(amount),
+    description,
+    pixKey,
+    pixCode,
+    qrCodeUrl,
+    transactionId: txid,
+  };
+}
+
+```
+
+C) Defensiva no generateStaticPix:
+
+```js
+generateStaticPix(amount, description = '') {
+  const value = this._normalizeAmount(amount);
+  if (!value) throw new Error('Valor inválido para PIX estático.');
+
+  const txId = this._generateTransactionId(); // mesmo que não vá no payload
+  const pixCode = this._generateBRCode({
+    pixKey: this.staticPixKey,
+    amount: value,
+    description,
+    // txid: '***' // para estático puro; pode deixar sem
+  });
+
+  return {
+    pixKey: this.staticPixKey,
+    pixCode,
+    qrCodeUrl: this._generateQRCodeUrl(pixCode),
+    transactionId: txId,
+    amount: Number(value),
+    description
+  };
+}
+
+```
+D) (Opcional/Seguro) gere o QR localmente em vez de usar um serviço externo (ex.: qrcode no Node/Front) para evitar vazar dados do BR Code.
+
+E) (Opcional) adicione validações/erros se qualquer TLV ultrapassar 99 caracteres (ou ao menos monitore o tamanho do Template 26).
+
+perfeito! aqui está um PixService.js reescrito, já com os ajustes essenciais: txid realmente usado, valor no formato EMV (1234.56), inclusão do Point of Initiation Method (01=11) para QR estático, normalização/validações, CRC16 correto, TLV com verificação de comprimento, e geração de QR local (via pacote qrcode, opcional).
+
+```
+Como usar o QR local: rode npm i qrcode no seu projeto. Se não quiser depender do pacote, pode comentar o método getQRCodeDataURL.
+```
+
+```js
 // PixService.js
 // Serviço para gerar BR Code (PIX estático) corretamente, com validações e QR local opcional.
 // Requisitos opcionais para QR local: npm i qrcode
@@ -163,16 +335,9 @@ class PixService {
     const parts = [gui, key];
 
     // 26-02 = Descrição (opcional, curta)
-    // Precisamos garantir que o Template 26 inteiro (soma dos sub-TLVs) não ultrapasse 99 chars.
-    // Tamanho atual sem descrição:
-    const currentLen = (gui + key).length;
-    // Espaço restante para o subcampo 02 incluindo o próprio cabeçalho (id+len = 4):
-    const remainingFor02 = 99 - currentLen - 4; // 4 = '02' + 2 dígitos de length
-    if (remainingFor02 > 0) {
-      const descNorm = this._normalizeText(description || '', remainingFor02);
-      if (descNorm) {
-        parts.push(this._tlv('02', descNorm));
-      }
+    const descNorm = this._normalizeText(description || '', 140);
+    if (descNorm) {
+      parts.push(this._tlv('02', descNorm));
     }
 
     const joined = parts.join('');
@@ -332,3 +497,34 @@ class PixService {
 }
 
 export default PixService;
+
+/* ===========================
+ * EXEMPLO DE USO
+ * ===========================
+
+import PixService from './PixService';
+
+const pix = new PixService({
+  merchantName: 'MERCADO LUIZ',
+  merchantCity: 'CUIABA',
+  staticPixKey: 'minha_chave@dominio.com', // ou +5565XXXXXXXXX, ou EVP/UUID, CPF, CNPJ
+});
+
+// 1) Geração padrão:
+const { pixCode } = pix.generateStaticPix(12.5, 'COCA-COLA 2L');
+// -> pixCode = payload EMV com CRC
+
+// 2) Regenerar com novo valor/descrição/txid:
+const regen = pix.regenerateStaticPix({
+  amount: 'R$ 1.234,56',
+  description: 'COMPRA 123',
+  txid: 'VENDA-000123', // máx 25
+});
+
+// 3) (Opcional) QR local:
+const dataURL = await pix.getQRCodeDataURL(pixCode, 320);
+// <img src={dataURL} />
+
+*/
+
+```

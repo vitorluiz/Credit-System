@@ -1,12 +1,10 @@
 /**
- * PIX Routes
- * 
- * Rotas relacionadas às funcionalidades PIX
+ * PIX Routes (ES Modules)
  */
 
-const express = require('express');
-const PixController = require('../controllers/PixController');
-const { authenticateRequest } = require('../middleware/auth');
+import express from 'express';
+import PixController from '../controllers/PixController.js';
+import { authenticateRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const pixController = new PixController();
@@ -41,4 +39,4 @@ router.get('/config', async (req, res) => {
   await pixController.getPixConfig(req, res);
 });
 
-module.exports = router;
+export default router;

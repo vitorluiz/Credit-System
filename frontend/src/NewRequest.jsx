@@ -91,7 +91,7 @@ export default function NewRequest() {
         payerName: payerName,
         payerCpf: payerCpf,
         receiverName: recipientData.full_name,
-        receiverCpf: recipientData.cpf,
+        receiverCpf: recipientData.cpf || '',
         amount: parseFloat(amount),
         paymentMethod: 'PIX',
         description,
@@ -161,7 +161,7 @@ export default function NewRequest() {
         }
       }} required>
         <option value="">-- Selecione --</option>
-        {recipients.map(r => <option key={r.id} value={r.id}>{r.full_name} — {r.cpf}</option>)}
+        {recipients.map(r => <option key={r.id} value={r.id}>{r.full_name} {r.cpf ? `— ${r.cpf}` : ''}</option>)}
       </select>
       
       <h3>Dados do Pagamento (PIX)</h3>
@@ -176,13 +176,13 @@ export default function NewRequest() {
   );
 
   const renderReview = () => {
-    const recipientData = recipients.find(r => r.id === parseInt(selectedRecipientId));
+    const recipientData = recipients.find(r => String(r.id) === String(selectedRecipientId));
     return (
       <div className="card review-container">
         <h2>Revise sua Compra</h2>
         <div className="review-details">
           <p><strong>Paciente:</strong> {recipientData?.full_name}</p>
-          <p><strong>CPF:</strong> {recipientData?.cpf}</p>
+          {recipientData?.cpf && <p><strong>CPF:</strong> {recipientData.cpf}</p>}
           <p><strong>Valor:</strong> {formatCurrency(parseFloat(amount))}</p>
           {description && <p><strong>Observação:</strong> {description}</p>}
         </div>
@@ -202,7 +202,7 @@ export default function NewRequest() {
         <strong>Valor: {formatCurrency(pixData.amount)}</strong>
         <div>Para: {receiverName}</div>
       </div>
-      <img src={pixData.qrCodeUrl} alt="QR Code PIX" className="pix-qrcode" />
+      <img src={pixData?.qrCodeDataURL || pixData?.qrCodeUrl} alt="QR Code PIX" className="pix-qrcode" />
       <label>Código PIX (Copia e Cola):</label>
       <textarea readOnly value={pixData.pixCode}></textarea>
       <button onClick={() => navigator.clipboard.writeText(pixData.pixCode).then(() => alert('Copiado!'))}>Copiar Código</button>

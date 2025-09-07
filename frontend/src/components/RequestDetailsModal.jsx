@@ -5,15 +5,22 @@ import UploadReceipt from './UploadReceipt';
 
 function PixDetails({ pixData }) {
   if (!pixData) return null;
+  const qrSrc = pixData.qrCodeDataURL || pixData.qrCodeUrl;
   return (
     <div className="pix-details-modal">
       <h4>Detalhes do PIX</h4>
-      <img src={pixData.qrCodeUrl} alt="QR Code PIX" style={{ maxWidth: '150px', margin: 'auto' }} />
-      <label>Copia e Cola:</label>
-      <textarea readOnly value={pixData.pixCode} rows="3"></textarea>
-      <button onClick={() => navigator.clipboard.writeText(pixData.pixCode).then(() => alert('Copiado!'))}>
-        Copiar Código
-      </button>
+      {qrSrc ? (
+        <img className="qr-image" src={qrSrc} alt="QR Code PIX" />
+      ) : (
+        <div className="qr-fallback">QR indisponível no momento. Use o Copia e Cola abaixo.</div>
+      )}
+      <label className="pix-label">Copia e Cola:</label>
+      <textarea className="pix-code-textarea" readOnly value={pixData.pixCode} rows="3"></textarea>
+      <div className="pix-actions">
+        <button className="btn-copy" onClick={() => navigator.clipboard.writeText(pixData.pixCode).then(() => alert('Copiado!'))}>
+          Copiar Código
+        </button>
+      </div>
     </div>
   );
 }
@@ -61,12 +68,10 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
       
       setMessage(`Status alterado para "${newStatus}" com sucesso!`);
       
-      // Notifica o componente pai sobre a atualização
       if (onStatusUpdate) {
         onStatusUpdate(request.id, newStatus);
       }
       
-      // Fecha o modal após 1.5 segundos
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -98,7 +103,6 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
   const statusOptions = ['Pendente', 'Pago', 'Cancelado', 'Estornado'];
   
-  // Status finais não podem ser editados
   const finalStatuses = ['pago', 'cancelado', 'estornado'];
   const isStatusFinal = finalStatuses.includes(status.toLowerCase());
   const canEditStatus = isAdmin && !isStatusFinal;
@@ -113,66 +117,51 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
   }
 
   return (
-    <div onClick={handleBackdropClick} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: '#fff', padding: '2rem', borderRadius: '8px', width: '90%', maxWidth: '600px', position: 'relative' }}>
-        <h2 style={{ marginTop: 0 }}>Detalhes da Solicitação</h2>
-        <button onClick={onClose} style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'transparent', fontSize: '1.25rem', cursor: 'pointer' }}>×</button>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ flex: '1 1 45%' }}>
+    <div onClick={handleBackdropClick} className="details-backdrop">
+      <div className="details-modal">
+        <h2 className="details-title">Detalhes da Solicitação</h2>
+        <button onClick={onClose} className="details-close">×</button>
+        <div className="details-grid">
+          <div>
             <strong>Pagador</strong>
             <div>{payer_name}</div>
-            <div style={{ fontSize: '0.9rem', color: '#555' }}>CPF: {payer_cpf}</div>
+            <div className="muted">CPF: {payer_cpf}</div>
           </div>
-          <div style={{ flex: '1 1 45%' }}>
+          <div>
             <strong>Recebedor</strong>
             <div>{receiver_name}</div>
-            <div style={{ fontSize: '0.9rem', color: '#555' }}>CPF: {receiver_cpf}</div>
+            <div className="muted">CPF: {receiver_cpf}</div>
           </div>
         </div>
-        <div style={{ marginTop: '1rem' }}>
+        <div className="details-row">
           <strong>Valor</strong>
           <div>{formatCurrency(amount)}</div>
         </div>
-        <div style={{ marginTop: '0.5rem' }}>
+        <div className="details-row">
           <strong>Forma de Pagamento</strong>
           <div>{payment_method}</div>
         </div>
-        <div style={{ marginTop: '0.5rem' }}>
+        <div className="details-row">
           <strong>Status</strong>
-          <div style={{ 
-            display: 'inline-block',
-            backgroundColor: getStatusColor(status) + '33',
-            color: getStatusColor(status),
-            padding: '4px 12px',
-            borderRadius: '12px',
-            fontSize: '0.9rem',
-            marginTop: '4px'
-          }}>
+          <div className="status-pill" style={{ backgroundColor: getStatusColor(status) + '33', color: getStatusColor(status) }}>
             {status}
           </div>
         </div>
         {request.transaction_id && (
-          <div style={{ marginTop: '0.5rem' }}>
+          <div className="details-row">
             <strong>ID da Transação (PIX):</strong>
-            <div style={{ fontSize: '0.9rem', color: '#555' }}><code>{request.transaction_id}</code></div>
+            <div className="muted"><code>{request.transaction_id}</code></div>
           </div>
         )}
 
         {message && (
-          <div style={{ 
-            marginTop: '1rem', 
-            padding: '0.5rem', 
-            backgroundColor: message.includes('Erro') ? '#ffe6e6' : '#e6ffe6',
-            color: message.includes('Erro') ? '#c0392b' : '#27ae60',
-            borderRadius: '4px',
-            fontSize: '0.9rem'
-          }}>
+          <div className={`flash ${message.includes('Erro') ? 'error' : 'success'}`}>
             {message}
           </div>
         )}
 
         {request.payment_method === 'PIX' && request.status === 'Pendente' && !showPix && (
-            <button onClick={handleRegeneratePix} disabled={isPixLoading} style={{marginTop: '1rem'}}>
+            <button onClick={handleRegeneratePix} disabled={isPixLoading} className="btn-primary" style={{marginTop: '1rem'}}>
               {isPixLoading ? 'Carregando PIX...' : 'Visualizar / Gerar PIX'}
             </button>
           )}
@@ -189,23 +178,17 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
           )}
 
         {canEditStatus && (
-          <div style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-            <strong style={{ display: 'block', marginBottom: '0.75rem' }}>Alterar Status:</strong>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div className="status-actions">
+            <strong>Alterar Status:</strong>
+            <div className="status-buttons">
               {statusOptions.map(statusOption => (
                 <button
                   key={statusOption}
                   onClick={() => handleStatusUpdate(statusOption)}
                   disabled={updating || statusOption === status}
+                  className="btn-status"
                   style={{
-                    backgroundColor: statusOption === status ? '#bdc3c7' : getStatusColor(statusOption),
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '4px',
-                    cursor: statusOption === status || updating ? 'not-allowed' : 'pointer',
-                    fontSize: '0.85rem',
-                    opacity: statusOption === status || updating ? 0.6 : 1
+                    backgroundColor: statusOption === status ? '#bdc3c7' : getStatusColor(statusOption)
                   }}
                 >
                   {updating ? 'Atualizando...' : statusOption}
@@ -216,15 +199,7 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
         )}
 
         {isAdmin && isStatusFinal && (
-          <div style={{ 
-            marginTop: '1.5rem', 
-            borderTop: '1px solid #eee', 
-            paddingTop: '1rem',
-            backgroundColor: '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '4px',
-            color: '#6c757d'
-          }}>
+          <div className="final-info">
             <strong>ℹ️ Status Final:</strong> Este status não pode ser alterado pois a solicitação já foi finalizada.
           </div>
         )}

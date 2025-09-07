@@ -10,6 +10,7 @@ import axios from 'axios';
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [activationLink, setActivationLink] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -20,7 +21,7 @@ export default function Register() {
     setMessage('');
     setError('');
     try {
-      const res = await axios.post('/api/register', { name, email });
+      const res = await axios.post('/api/register', { name, email, phone: `+55${onlyDigits(phone)}` });
       setActivationLink(res.data.activationLink || '');
       setMessage('Registro realizado! Enviamos um link de ativação para o seu email.');
     } catch (err) {
@@ -31,6 +32,18 @@ export default function Register() {
       }
     }
   };
+
+  function onlyDigits(value) {
+    return (value || '').replace(/\D/g, '');
+  }
+
+  function formatPhone(value) {
+    const v = onlyDigits(value).slice(0, 11);
+    if (v.length <= 2) return `(${v}`;
+    if (v.length <= 6) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
+    if (v.length <= 10) return `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
+    return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+  }
 
   return (
     <div className="container">
@@ -55,6 +68,18 @@ export default function Register() {
           onChange={e => setEmail(e.target.value)}
           required
         />
+        <label htmlFor="phone">Telefone (WhatsApp)</label>
+        <div className="phone-input-container">
+          <span className="phone-prefix">+55</span>
+          <input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(formatPhone(e.target.value))}
+            placeholder="(XX) XXXXX-XXXX"
+            required
+          />
+        </div>
         <button type="submit">Registrar</button>
         {message && <div className="success">{message}</div>}
         {error && <div className="error">{error}</div>}

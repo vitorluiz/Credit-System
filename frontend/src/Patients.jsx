@@ -46,7 +46,7 @@ export default function Patients() {
     e.preventDefault();
     setError('');
     setMessage('');
-    if (!fullName || !cpf) { setError('Informe nome e CPF'); return; }
+    if (!fullName) { setError('O nome completo é obrigatório'); return; }
     try {
       const token = localStorage.getItem('token');
       const res = await axios.post('/api/patients', { fullName, cpf: onlyDigits(cpf) }, { headers: { Authorization: `Bearer ${token}` } });
@@ -72,8 +72,8 @@ export default function Patients() {
           <h3>Novo Paciente</h3>
           <label>Nome completo *</label>
           <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required />
-          <label>CPF *</label>
-          <input type="text" value={cpf} onChange={e => setCpf(formatCPF(e.target.value))} required />
+          <label>CPF (Opcional)</label>
+          <input type="text" value={cpf} onChange={e => setCpf(formatCPF(e.target.value))} />
           <button type="submit">Adicionar</button>
           {message && <div className="success">{message}</div>}
           {error && <div className="error">{error}</div>}

@@ -32,20 +32,18 @@ PGADMIN_DEFAULT_PASSWORD=admin
 
 # PIX Estático - Chave PIX
 STATIC_PIX_KEY=Chave_Pix_Aqui
-
-# ASAAS - Integração de Pagamentos (OPCIONAL - não usado atualmente)
-ASAAS_API_TOKEN=
-ASAAS_BASE_URL=https://sandbox.asaas.com/api/v3
-ASAAS_PIX_KEY=
+MERCHANT_NAME="NOME DO SEU COMERCIO"
+MERCHANT_CITY="CIDADE DO COMERCIO"
 ```
 
 ## Observações importantes:
 
 - **STATIC_PIX_KEY**: Esta é a chave PIX que será usada para receber os pagamentos. Altere para sua chave PIX real.
+- **MERCHANT_NAME**: Nome do seu comércio que aparecerá no PIX (máx. 25 caracteres).
+- **MERCHANT_CITY**: Cidade do seu comércio que aparecerá no PIX (máx. 15 caracteres).
 - **APP_BASE_URL**: URL pública do frontend usada para montar links de ativação e servir assets públicos.
 - **SMTP**: Para envio de emails de ativação. Para Gmail, ative App Passwords (2FA) e use smtp.gmail.com.
 - **PgAdmin**: Acesse `http://localhost:5050` com as credenciais configuradas para gerenciar o banco.
-- **ASAAS**: Variáveis opcionais para integração futura com gateway de pagamento.
 
 ## Como usar:
 

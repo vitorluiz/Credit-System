@@ -1,14 +1,18 @@
 /**
- * PIX Controller
+ * PIX Controller (ES Modules)
  * 
  * Controlador responsável por gerenciar endpoints relacionados ao PIX
  */
 
-const PixService = require('../services/PixService');
+import PixService from '../services/PixService.js';
 
 class PixController {
   constructor() {
-    this.pixService = new PixService();
+    this.pixService = new PixService({
+      staticPixKey: process.env.STATIC_PIX_KEY,
+      merchantName: process.env.MERCHANT_NAME || 'SUPERMERCADO FLORAIS',
+      merchantCity: process.env.MERCHANT_CITY || 'CUIABA',
+    });
   }
 
   /**
@@ -19,7 +23,6 @@ class PixController {
     try {
       const { payerEmail, payerName, receiverName, receiverCpf, amount, description } = req.body;
       
-      // Validação de dados obrigatórios
       if (!payerEmail || !payerName || !receiverName || !amount) {
         return res.status(400).json({ 
           message: 'Dados incompletos para criar PIX.',
@@ -27,7 +30,6 @@ class PixController {
         });
       }
 
-      // Validação do valor
       const numericAmount = parseFloat(amount);
       if (isNaN(numericAmount) || numericAmount <= 0) {
         return res.status(400).json({ 
@@ -35,14 +37,13 @@ class PixController {
         });
       }
 
-      // Gerar PIX estático
       const pixData = this.pixService.generateStaticPix(
         numericAmount,
-        description && String(description).trim().length > 0
-          ? String(description).trim().substring(0, 25)
-          : `Pagamento para ${receiverName}`
+        '' // não incluir descrição no BR Code
       );
       
+      const qrCodeDataURL = await this.pixService.getQRCodeDataURL(pixData.pixCode);
+
       return res.json({
         message: 'PIX estático gerado com sucesso!',
         payment: {
@@ -52,7 +53,7 @@ class PixController {
           receiverCpf,
           pixKey: pixData.pixKey,
           pixCode: pixData.pixCode,
-          qrCodeUrl: pixData.qrCodeUrl,
+          qrCodeUrl: qrCodeDataURL,
           transactionId: pixData.transactionId,
           description: pixData.description || description,
           instructions: 'Após realizar o pagamento, envie o comprovante para confirmação.'
@@ -83,7 +84,9 @@ class PixController {
         });
       }
 
-      const isValid = this.pixService.isValidPixKey(pixKey);
+      const isValid = this.pixService._assertPixKey
+        ? (() => { try { this.pixService._assertPixKey(pixKey); return true; } catch { return false; } })()
+        : this.pixService.isValidPixKey?.(pixKey) ?? false;
       
       return res.json({
         pixKey,
@@ -110,7 +113,7 @@ class PixController {
         pixKey: this.pixService.staticPixKey,
         merchantName: this.pixService.merchantName,
         merchantCity: this.pixService.merchantCity,
-        isConfigured: this.pixService.isValidPixKey(this.pixService.staticPixKey)
+        isConfigured: !!this.pixService.staticPixKey
       });
 
     } catch (err) {
@@ -123,4 +126,4 @@ class PixController {
   }
 }
 
-module.exports = PixController;
+export default PixController;
