@@ -28,7 +28,7 @@ export default function Login() {
         // Sessão válida, redirecionar para dashboard
         const isAdmin = localStorage.getItem('isAdmin') === 'true';
         if (isAdmin) {
-          navigate('/admin-dashboard');
+          navigate('/admin');
         } else {
           navigate('/dashboard');
         }
@@ -59,7 +59,7 @@ export default function Login() {
       }
       // Redirect to dashboard or admin dashboard depending on role
       if (res.data.isAdmin) {
-        navigate('/admin-dashboard');
+        navigate('/admin');
       } else {
         navigate('/dashboard');
       }

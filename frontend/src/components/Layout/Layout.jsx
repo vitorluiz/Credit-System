@@ -102,7 +102,7 @@ export default function Layout({ children }) {
       {user.isAdmin && (
         <>
           <Link 
-            to="/admin-dashboard" 
+            to="/admin" 
             className="nav__link"
             onClick={() => setIsMobileMenuOpen(false)}
           >
