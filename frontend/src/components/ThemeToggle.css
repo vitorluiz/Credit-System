@@ -1,0 +1,88 @@
+/* ThemeToggle.css - Toggle de tema claro/escuro */
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: var(--color-neutral-100);
+  transform: scale(1.05);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle__track {
+  width: 48px;
+  height: 24px;
+  background: var(--color-neutral-300);
+  border-radius: 12px;
+  position: relative;
+  transition: background-color 0.3s ease;
+  border: 2px solid var(--color-neutral-400);
+}
+
+.theme-toggle__track:hover {
+  background: var(--color-neutral-400);
+}
+
+.theme-toggle__thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--color-surface);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle__thumb--dark {
+  transform: translateX(24px);
+  background: var(--color-neutral-800);
+}
+
+.theme-toggle__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-neutral-600);
+  transition: color 0.3s ease;
+}
+
+.theme-toggle__thumb--dark .theme-toggle__icon {
+  color: var(--color-neutral-200);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .theme-toggle__track {
+  background: var(--color-neutral-600);
+  border-color: var(--color-neutral-500);
+}
+
+[data-theme="dark"] .theme-toggle__track:hover {
+  background: var(--color-neutral-500);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background: var(--color-neutral-700);
+}
+
+/* Animation for smooth theme transition */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

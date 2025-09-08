@@ -16,6 +16,7 @@ import { PatientProvider } from './context/PatientContext.jsx'; // Importar o Pr
 import './styles/design-system.css';
 import './styles/components.css';
 import './styles/layout.css';
+import './styles/theme.css';
 
 // Root of the React application. Defines routes for each page. When
 // first visiting the site, users are redirected to the login page.

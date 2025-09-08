@@ -28,8 +28,20 @@
   outline-offset: 2px;
 }
 
+/* Mobile Controls */
+.header__mobile-controls {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
 /* Mobile-specific adjustments */
 @media (max-width: 767px) {
+  .header__mobile-controls {
+    display: flex;
+  }
+  
   .sidebar_toggle {
     display: block;
   }
