@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import './FirstAccess.css';
 
 export default function FirstAccess() {
   const [cpf, setCpf] = useState('');
@@ -56,20 +57,69 @@ export default function FirstAccess() {
   }
 
   return (
-    <div className="container">
-      <h1>Complete seu Cadastro</h1>
-      <div className="alert-info" style={{ textAlign: 'left', marginBottom: '2rem' }}>
-        <p><strong>Por que precisamos do seu CPF?</strong></p>
-        <p>Seu CPF é necessário para ser o pagador na geração dos pagamentos PIX. Ele garante a segurança e a correta identificação das transações.</p>
+    <div className="first-access">
+      <div className="first-access__container">
+        <h1 className="first-access__title">
+          Complete seu Cadastro
+        </h1>
+        
+        <div className="first-access__info">
+          <h3 className="first-access__info-title">
+            Por que precisamos do seu CPF?
+          </h3>
+          <p className="first-access__info-text">
+            Seu CPF é necessário para ser o pagador na geração dos pagamentos PIX. 
+            Ele garante a segurança e a correta identificação das transações.
+          </p>
+        </div>
+        
+        <form className="first-access__form" onSubmit={handleSubmit}>
+          <div className="first-access__form-group">
+            <label htmlFor="cpf" className="first-access__label">
+              CPF *
+            </label>
+            <input 
+              id="cpf" 
+              type="text" 
+              value={cpf} 
+              onChange={e => setCpf(formatCPF(e.target.value))} 
+              className="first-access__input"
+              placeholder="000.000.000-00"
+              required 
+            />
+            {!isValidCPF(cpf) && cpf && (
+              <div className="first-access__validation first-access__validation--error">
+                CPF inválido
+              </div>
+            )}
+            {isValidCPF(cpf) && cpf && (
+              <div className="first-access__validation first-access__validation--success">
+                CPF válido
+              </div>
+            )}
+          </div>
+          
+          <button 
+            type="submit" 
+            className="first-access__button"
+            disabled={!isValidCPF(cpf) || !cpf}
+          >
+            Salvar
+          </button>
+          
+          {message && (
+            <div className="first-access__message first-access__message--success">
+              {message}
+            </div>
+          )}
+          
+          {error && (
+            <div className="first-access__message first-access__message--error">
+              {error}
+            </div>
+          )}
+        </form>
       </div>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="cpf">CPF *</label>
-        <input id="cpf" type="text" value={cpf} onChange={e => setCpf(formatCPF(e.target.value))} required />
-        {!isValidCPF(cpf) && cpf && <div className="error">CPF inválido</div>}
-        <button type="submit" disabled={!isValidCPF(cpf) || !cpf}>Salvar</button>
-        {message && <div className="success">{message}</div>}
-        {error && <div className="error">{error}</div>}
-      </form>
     </div>
   );
 }
