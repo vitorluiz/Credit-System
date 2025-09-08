@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from './Layout.jsx';
-import RequestDetailsModal from './components/RequestDetailsModal.jsx'; // Caminho corrigido
+import RequestDetailsModal from './components/RequestDetailsModal.jsx';
+import MobileDashboard from './components/Mobile/MobileDashboard.jsx';
+import useMobile from './hooks/useMobile.js';
 
 /**
  * Dashboard page for regular users. Displays summary cards for the
@@ -10,6 +12,7 @@ import RequestDetailsModal from './components/RequestDetailsModal.jsx'; // Camin
  * requests. A button to create a new credit request is provided.
  */
 export default function Dashboard() {
+  const { isMobile } = useMobile();
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +21,18 @@ export default function Dashboard() {
   const [endDate, setEndDate] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const navigate = useNavigate();
+
+  // Use mobile component for mobile devices
+  console.log('Dashboard - isMobile:', isMobile, 'screenWidth:', window.innerWidth);
+  
+  // Force mobile for testing
+  const forceMobile = window.innerWidth < 768;
+  console.log('Dashboard - forceMobile:', forceMobile);
+  
+  if (isMobile || forceMobile) {
+    console.log('Dashboard - Rendering MobileDashboard');
+    return <MobileDashboard />;
+  }
 
   useEffect(() => {
     async function fetchRequests() {
@@ -195,11 +210,6 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <button onClick={() => setSelectedRequest(req)}>Ver Detalhes</button>
-                      {req.payment_method === 'PIX' && req.status === 'Pendente' && (
-                        <button onClick={() => setSelectedRequest(req)} style={{marginLeft: '10px'}}>
-                          Enviar Comprovante
-                        </button>
-                      )}
                     </div>
                   </div>
                 ))}

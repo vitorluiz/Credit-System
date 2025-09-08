@@ -13,7 +13,9 @@ import NewRequest from './NewRequest.jsx';
 import PixGeneration from './PixGeneration.jsx';
 import Patients from './Patients.jsx';
 import { PatientProvider } from './context/PatientContext.jsx'; // Importar o Provider
-import './style.css';
+import './styles/design-system.css';
+import './styles/components.css';
+import './styles/layout.css';
 
 // Root of the React application. Defines routes for each page. When
 // first visiting the site, users are redirected to the login page.

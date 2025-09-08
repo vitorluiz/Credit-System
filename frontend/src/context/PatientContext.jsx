@@ -16,7 +16,8 @@ export function PatientProvider({ children }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!token || !sessionToken) {
         setHasPatients(false);
         return;
       }
@@ -34,7 +35,8 @@ export function PatientProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (token && sessionToken) {
         refetchPatients();
     } else {
         setLoading(false);

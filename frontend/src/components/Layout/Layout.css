@@ -1,0 +1,134 @@
+/* ============================================
+   LAYOUT COMPONENT - Credit System
+   ============================================ */
+
+/* This file contains specific styles for the Layout component
+   that complement the base layout styles */
+
+/* Mobile Menu Toggle Button */
+.sidebar_toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  color: var(--color-neutral-700);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar_toggle:hover {
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-400);
+}
+
+.sidebar_toggle:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 767px) {
+  .sidebar_toggle {
+    display: block;
+  }
+  
+  /* Ensure proper spacing in mobile header */
+  .sidebar {
+    padding: 0 var(--space-4);
+  }
+  
+  .sidebar__header {
+    flex: 1;
+    padding: 0;
+  }
+  
+  .sidebar__logo {
+    height: 32px;
+  }
+}
+
+/* Navigation Link States */
+.nav__link {
+  position: relative;
+}
+
+.nav__link--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background-color: var(--color-primary-500);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Mobile Drawer Animations */
+.mobile-drawer {
+  will-change: transform;
+}
+
+.mobile-drawer--open {
+  will-change: auto;
+}
+
+/* Backdrop Animation */
+.mobile-backdrop {
+  will-change: opacity, visibility;
+}
+
+.mobile-backdrop--open {
+  will-change: auto;
+}
+
+/* Focus Management for Mobile */
+@media (max-width: 767px) {
+  .mobile-drawer:not(.mobile-drawer--open) {
+    visibility: hidden;
+  }
+  
+  .mobile-drawer--open {
+    visibility: visible;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .sidebar__toggle {
+    border-width: 2px;
+  }
+  
+  .nav__link--active::before {
+    width: 6px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer,
+  .mobile-backdrop {
+    transition: none;
+  }
+  
+  .nav__link {
+    transition: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .sidebar,
+  .sidebar__toggle,
+  .mobile-drawer,
+  .mobile-backdrop {
+    display: none !important;
+  }
+  
+  .main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

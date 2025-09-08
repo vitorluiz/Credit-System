@@ -67,10 +67,7 @@
   margin-top: 0.75rem;
 }
 
-.muted {
-  font-size: 0.9rem;
-  color: #555;
-}
+.muted { font-size: 0.9rem; color: var(--color-muted); }
 
 .status-pill {
   display: inline-block;
@@ -138,9 +135,10 @@
   background-color: #2e86de;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.75rem 1.1rem;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 1rem;
 }
 .btn-copy:hover, .btn-primary:hover {
   filter: brightness(0.95);
@@ -154,8 +152,16 @@
   display: flex; gap: 0.5rem; flex-wrap: wrap;
 }
 .btn-status {
-  color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+  color: #fff; border: none; padding: 0.6rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.95rem;
 }
 .final-info {
   margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; background-color: #f8f9fa; padding: 1rem; border-radius: 4px; color: #6c757d;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .details-modal { padding: 1rem; }
+  .details-grid { grid-template-columns: 1fr; }
+  .pix-actions { justify-content: stretch; }
+  .btn-copy, .btn-primary { width: 100%; }
 }

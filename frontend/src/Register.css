@@ -1,0 +1,228 @@
+/* ============================================
+   REGISTER FORM - Credit System
+   ============================================ */
+
+.register {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #008033 0%, #ebac24 100%);
+  padding: var(--space-4);
+}
+
+.register__container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: var(--space-8);
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  overflow: hidden;
+}
+
+.register__container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #008033 0%, #ebac24 100%);
+}
+
+/* Header */
+.register__header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.register__logo {
+  margin-bottom: var(--space-6);
+}
+
+.register__logo img {
+  max-width: 180px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.register__title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+  line-height: 1.2;
+}
+
+.register__subtitle {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Form */
+.register__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Phone Input */
+.phone-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-3) var(--space-4);
+  transition: all 0.2s ease;
+}
+
+.phone-input:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.phone-input__prefix {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  padding: 0 var(--space-2);
+  background: var(--color-bg-light);
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.phone-input__field {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.phone-input__field::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* Button */
+.btn--full {
+  width: 100%;
+  justify-content: center;
+  font-size: 1.1rem;
+  padding: var(--space-4) var(--space-6);
+  font-weight: 600;
+}
+
+/* Alerts */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.alert__icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert__content {
+  flex: 1;
+}
+
+.alert__link {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.alert--success {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.alert--error {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.alert--info {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+}
+
+/* Footer */
+.register__footer {
+  text-align: center;
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.register__login-text {
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.register__login-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: var(--space-2);
+  transition: color 0.2s ease;
+}
+
+.register__login-link:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .register {
+    padding: var(--space-2);
+  }
+  
+  .register__container {
+    padding: var(--space-6);
+    border-radius: 12px;
+  }
+  
+  .register__title {
+    font-size: 1.75rem;
+  }
+  
+  .register__logo img {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register__container {
+    padding: var(--space-4);
+  }
+  
+  .register__title {
+    font-size: 1.5rem;
+  }
+  
+  .register__form {
+    gap: var(--space-4);
+  }
+}

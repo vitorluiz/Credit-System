@@ -13,6 +13,7 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import pg from 'pg';
 import nodemailer from 'nodemailer';
@@ -78,6 +79,9 @@ async function ensureSchema() {
       is_admin BOOLEAN DEFAULT FALSE,
       activated BOOLEAN DEFAULT FALSE,
       activation_token VARCHAR(100),
+      session_token VARCHAR(255),
+      session_expires_at TIMESTAMP,
+      last_login_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -162,6 +166,14 @@ async function ensureSchema() {
     ALTER TABLE credit_requests
     ALTER COLUMN receiver_cpf DROP NOT NULL;
   `);
+  await pool.query(`
+    ALTER TABLE credit_requests
+    ALTER COLUMN receipt_type TYPE VARCHAR(50);
+  `);
+  await pool.query(`
+    ALTER TABLE credit_requests
+    ADD COLUMN IF NOT EXISTS receipt_url TEXT;
+  `);
 }
 
 // Wait for the database to be ready before attempting to create
@@ -195,7 +207,8 @@ waitForDatabase().then(() => {
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Aumenta limites para uploads base64 (ex.: PDFs) via JSON
+app.use(express.json({ limit: '15mb' }));
 
 // Instanciar serviços
 const pixService = new PixService({
@@ -210,16 +223,47 @@ app.use('/api/pix', pixRoutes);
 app.use('/media', express.static(path.resolve('uploads')));
 
 // Middleware de autenticação (simplificado para o exemplo)
-const authenticateRequest = (req, res, next) => {
+const authenticateRequest = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (token == null) return res.sendStatus(401);
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // Verificar se a sessão ainda é válida no banco
+        const result = await pool.query(
+            'SELECT id, name, email, is_admin, session_token, session_expires_at FROM users WHERE id = $1',
+            [decoded.id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ message: 'Usuário não encontrado.' });
+        }
+        
+        const user = result.rows[0];
+        
+        // Verificar se o token de sessão corresponde e não expirou
+        if (!user.session_token || user.session_token !== decoded.sessionToken) {
+            return res.status(401).json({ message: 'Sessão inválida. Faça login novamente.' });
+        }
+        
+        if (new Date() > new Date(user.session_expires_at)) {
+            return res.status(401).json({ message: 'Sessão expirada. Faça login novamente.' });
+        }
+        
+        req.user = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            is_admin: user.is_admin
+        };
+        
         next();
-    });
+    } catch (err) {
+        console.error('Error in authenticateRequest:', err);
+        return res.status(401).json({ message: 'Token inválido.' });
+    }
 };
 
 
@@ -282,11 +326,37 @@ app.post('/api/register', async (req, res) => {
  */
 app.get('/api/patients', authenticateRequest, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT id, full_name, cpf FROM patients WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.user.id] // Correção: de req.user.user_id para req.user.id
-    );
-    return res.json(result.rows);
+    const isAdmin = req.user.is_admin === true || req.user.is_admin === 'true';
+    const q = String(req.query.q || '').trim();
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 20));
+    const offset = (page - 1) * pageSize;
+
+    const whereParts = [];
+    const params = [];
+
+    if (!isAdmin) {
+      whereParts.push(`user_id = $${params.length + 1}`);
+      params.push(req.user.id);
+    }
+    if (q) {
+      whereParts.push(`(full_name ILIKE $${params.length + 1} OR cpf ILIKE $${params.length + 1})`);
+      params.push(`%${q}%`);
+    }
+    const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+
+    const countSql = `SELECT COUNT(*)::int AS total FROM patients ${whereSql}`;
+    const { rows: countRows } = await pool.query(countSql, params);
+    const total = countRows[0]?.total ?? 0;
+
+    const dataSql = `SELECT id, full_name, cpf FROM patients ${whereSql} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const dataParams = params.concat([pageSize, offset]);
+    const { rows } = await pool.query(dataSql, dataParams);
+
+    res.set('X-Total-Count', String(total));
+    res.set('X-Page', String(page));
+    res.set('X-Page-Size', String(pageSize));
+    return res.json(rows);
   } catch (err) {
     console.error('Error in /api/patients [GET]:', err);
     return res.status(500).json({ message: 'Erro interno do servidor.' });
@@ -313,6 +383,84 @@ app.post('/api/patients', authenticateRequest, async (req, res) => {
     return res.status(201).json(insert.rows[0]);
   } catch (err) {
     console.error('Error in /api/patients [POST]:', err);
+    return res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
+/*
+ * PUT /api/patients/:id
+ * Atualiza um paciente existente
+ */
+app.put('/api/patients/:id', authenticateRequest, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, cpf } = req.body;
+
+    if (!fullName) {
+      return res.status(400).json({ message: 'Nome completo é obrigatório.' });
+    }
+
+    // Verificar se o paciente existe e pertence ao usuário (ou se é admin)
+    const { rows: existingRows } = await pool.query(
+      'SELECT id, user_id FROM patients WHERE id = $1',
+      [id]
+    );
+
+    if (existingRows.length === 0) {
+      return res.status(404).json({ message: 'Paciente não encontrado.' });
+    }
+
+    const patient = existingRows[0];
+    
+    // Verificar se o usuário tem permissão para editar (é o dono ou é admin)
+    if (patient.user_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ message: 'Sem permissão para editar este paciente.' });
+    }
+
+    // Atualizar o paciente
+    const { rows: updatedRows } = await pool.query(
+      'UPDATE patients SET full_name = $1, cpf = $2 WHERE id = $3 RETURNING id, full_name, cpf',
+      [fullName, cpf, id]
+    );
+
+    return res.json(updatedRows[0]);
+  } catch (err) {
+    console.error('Error in /api/patients [PUT]:', err);
+    return res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
+/*
+ * DELETE /api/patients/:id
+ * Exclui um paciente
+ */
+app.delete('/api/patients/:id', authenticateRequest, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar se o paciente existe e pertence ao usuário (ou se é admin)
+    const { rows: existingRows } = await pool.query(
+      'SELECT id, user_id FROM patients WHERE id = $1',
+      [id]
+    );
+
+    if (existingRows.length === 0) {
+      return res.status(404).json({ message: 'Paciente não encontrado.' });
+    }
+
+    const patient = existingRows[0];
+    
+    // Verificar se o usuário tem permissão para excluir (é o dono ou é admin)
+    if (patient.user_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ message: 'Sem permissão para excluir este paciente.' });
+    }
+
+    // Excluir o paciente
+    await pool.query('DELETE FROM patients WHERE id = $1', [id]);
+
+    return res.json({ message: 'Paciente excluído com sucesso!' });
+  } catch (err) {
+    console.error('Error in /api/patients [DELETE]:', err);
     return res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });
@@ -402,7 +550,7 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required.' });
   }
   try {
-    const result = await pool.query('SELECT id, name, email, password, is_admin, activated, cpf, phone FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT id, name, email, password, is_admin, activated, cpf, phone, session_token, session_expires_at FROM users WHERE email = $1', [email]);
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
@@ -414,12 +562,56 @@ app.post('/api/login', async (req, res) => {
     if (!valid) {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '8h' });
+
+    // Gerar novo token de sessão
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const sessionExpiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 horas
+
+    // Invalidar sessões anteriores do usuário
+    await pool.query(
+      'UPDATE users SET session_token = $1, session_expires_at = $2, last_login_at = CURRENT_TIMESTAMP WHERE id = $3',
+      [sessionToken, sessionExpiresAt, user.id]
+    );
+
+    const token = jwt.sign({ 
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      is_admin: user.is_admin,
+      sessionToken: sessionToken
+    }, JWT_SECRET, { expiresIn: '8h' });
+    
     const needsFirstAccess = !user.cpf; // Apenas CPF é verificado agora
-    return res.json({ token, name: user.name, isAdmin: user.is_admin, needsFirstAccess });
+    return res.json({ 
+      token, 
+      name: user.name, 
+      isAdmin: user.is_admin, 
+      needsFirstAccess,
+      sessionToken: sessionToken
+    });
   } catch (err) {
     console.error('Error in /api/login:', err);
     return res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+/*
+ * POST /api/logout
+ *
+ * Invalida a sessão do usuário no banco de dados.
+ */
+app.post('/api/logout', authenticateRequest, async (req, res) => {
+  try {
+    // Invalidar sessão no banco
+    await pool.query(
+      'UPDATE users SET session_token = NULL, session_expires_at = NULL WHERE id = $1',
+      [req.user.id]
+    );
+    
+    return res.json({ message: 'Logout realizado com sucesso.' });
+  } catch (err) {
+    console.error('Error in /api/logout:', err);
+    return res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });
 
@@ -727,10 +919,10 @@ app.post('/api/upload-receipt', authenticateRequest, async (req, res) => {
     let query, params;
     
     if (isAdmin) {
-      query = 'SELECT id, status FROM credit_requests WHERE id = $1';
+      query = 'SELECT id, status, transaction_id FROM credit_requests WHERE id = $1';
       params = [requestId];
     } else {
-      query = 'SELECT id, status FROM credit_requests WHERE id = $1 AND creator_id = $2';
+      query = 'SELECT id, status, transaction_id FROM credit_requests WHERE id = $1 AND creator_id = $2';
       params = [requestId, req.user.id];
     }
     
@@ -740,15 +932,59 @@ app.post('/api/upload-receipt', authenticateRequest, async (req, res) => {
       return res.status(404).json({ message: 'Solicitação não encontrada.' });
     }
 
-    // Salvar comprovante (aqui você salvaria o arquivo, por enquanto apenas metadata)
+    // Normaliza o tipo (evita estourar limite da coluna e guarda MIME)
+    const storedType = String(receiptType || 'application/octet-stream').slice(0, 50);
+
+    // Persistir arquivo em disco sob uploads/receipts/YEAR/MONTH/DAY/
+    const uploadsRoot = path.resolve('uploads');
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dirPath = path.join(uploadsRoot, 'receipts', year, month, day);
+    await fs.promises.mkdir(dirPath, { recursive: true });
+
+    // receiptData esperado no formato data:<mime>;base64,<data>
+    const match = String(receiptData || '').match(/^data:([^;]+);base64,(.*)$/);
+    if (!match) {
+      return res.status(400).json({ message: 'Formato do comprovante inválido.' });
+    }
+    const mime = match[1];
+    const b64 = match[2];
+    const buffer = Buffer.from(b64, 'base64');
+
+    // Determina extensão por MIME
+    const ext = mime === 'application/pdf' ? 'pdf'
+      : mime === 'image/png' ? 'png'
+      : mime === 'image/jpeg' ? 'jpg'
+      : mime === 'image/jpg' ? 'jpg'
+      : mime === 'image/gif' ? 'gif'
+      : 'bin';
+    // Usa o transaction_id como nome base do arquivo
+    let txid = requestResult.rows[0]?.transaction_id;
+    if (!txid) {
+      txid = 'TX-' + Math.random().toString(36).slice(2, 10).toUpperCase();
+      await pool.query('UPDATE credit_requests SET transaction_id = $1 WHERE id = $2', [txid, requestId]);
+    }
+    const safeTxid = String(txid).replace(/[^A-Za-z0-9_-]/g, '_');
+    const fileName = `receipt_${requestId}_${safeTxid}.${ext}`;
+    const filePath = path.join(dirPath, fileName);
+    await fs.promises.writeFile(filePath, buffer);
+
+    // Gera URL pública servida por /media
+    const publicUrl = `/media/receipts/${year}/${month}/${day}/${fileName}`;
+
+    // Atualiza registro: guarda URL, tipo e limpa receipt_data (opcional)
     await pool.query(
-      'UPDATE credit_requests SET receipt_data = $1, receipt_type = $2, receipt_uploaded_at = CURRENT_TIMESTAMP WHERE id = $3',
-      [receiptData, receiptType || 'image', requestId]
+      'UPDATE credit_requests SET receipt_data = NULL, receipt_type = $1, receipt_uploaded_at = CURRENT_TIMESTAMP, receipt_url = $2 WHERE id = $3',
+      [storedType, publicUrl, requestId]
     );
 
     return res.json({ 
       message: 'Comprovante enviado com sucesso! Aguarde a análise.',
-      requestId 
+      requestId,
+      receiptUrl: publicUrl,
+      receiptType: storedType
     });
 
   } catch (err) {
@@ -884,4 +1120,18 @@ function escapeHtml(text) {
 // Start the server.
 app.listen(PORT, () => {
   console.log(`Backend is running on port ${PORT}`);
+  // Garante diretórios de uploads na inicialização
+  const uploadsRoot = path.resolve('uploads');
+  const receiptsRoot = path.join(uploadsRoot, 'receipts');
+  fs.promises.mkdir(receiptsRoot, { recursive: true }).catch(() => {});
+  
+  // Cria estrutura de pastas por data para o ano atual
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const receiptsYearRoot = path.join(receiptsRoot, String(currentYear));
+  fs.promises.mkdir(receiptsYearRoot, { recursive: true }).catch(() => {});
+  
+  console.log(`📁 Uploads directory: ${uploadsRoot}`);
+  console.log(`📁 Receipts directory: ${receiptsRoot}`);
+  console.log(`📁 Year directory: ${receiptsYearRoot}`);
 });

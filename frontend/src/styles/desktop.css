@@ -1,0 +1,18 @@
+/* Desktop and wider screens */
+@media (min-width: 769px) {
+  :root { --spacing: 1.25rem; }
+  .app-layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem; background: #fff; border-right: 1px solid #eaeaea; }
+  .logo { display: flex; align-items: center; gap: .75rem; margin-bottom: 2rem; font-weight: 600; color: #2a3f54; }
+  .logo img { height: 40px; }
+  .nav-inline { display: flex; flex-direction: column; }
+  .nav-inline a { padding: .5rem 0; color: #2a3f54; text-decoration: none; border-radius: 4px; }
+  .nav-inline a:hover { background: #f0f4f8; }
+  .main-content { flex: 1; padding: 2rem; background: #f5f7fa; overflow-y: auto; }
+
+  .card { padding: 1rem; background: #fff; border: 1px solid #e3e7ea; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .request-list { background: #fff; border: 1px solid #e3e7ea; border-radius: 8px; overflow: hidden; }
+  .request-item { display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid #f0f4f8; }
+}
+
+

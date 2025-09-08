@@ -1,0 +1,224 @@
+/* UploadReceipt.css - Componente de upload de comprovante */
+
+.upload-receipt {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.upload-receipt:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Header */
+.upload-receipt__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.upload-receipt__icon {
+  font-size: 1.5rem;
+  color: var(--color-primary);
+}
+
+.upload-receipt__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.upload-receipt__description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-6) 0;
+  line-height: 1.5;
+}
+
+/* Form */
+.upload-receipt__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* File Input */
+.upload-receipt__file-input {
+  display: none;
+}
+
+.upload-receipt__file-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-bg-light);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 60px;
+}
+
+.upload-receipt__file-label:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-50);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.upload-receipt__file-icon {
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.upload-receipt__file-text {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  flex: 1;
+  text-align: left;
+}
+
+/* Submit Button */
+.upload-receipt__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  font-size: 1rem;
+  font-weight: 600;
+  min-height: 48px;
+  transition: all 0.3s ease;
+}
+
+.upload-receipt__submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.upload-receipt__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.upload-receipt__submit-icon {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.upload-receipt__submit:hover:not(:disabled) .upload-receipt__submit-icon {
+  transform: scale(1.1);
+}
+
+/* Message */
+.upload-receipt__message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: var(--space-4);
+  animation: slideIn 0.3s ease-out;
+}
+
+.upload-receipt__message--success {
+  background: var(--color-success-50);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-200);
+}
+
+.upload-receipt__message--error {
+  background: var(--color-error-50);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-200);
+}
+
+.upload-receipt__message-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .upload-receipt {
+    padding: var(--space-4);
+  }
+  
+  .upload-receipt__header {
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+  
+  .upload-receipt__title {
+    font-size: 1rem;
+  }
+  
+  .upload-receipt__description {
+    font-size: 0.85rem;
+    margin-bottom: var(--space-4);
+  }
+  
+  .upload-receipt__file-label {
+    padding: var(--space-3);
+    min-height: 50px;
+  }
+  
+  .upload-receipt__file-text {
+    font-size: 0.85rem;
+  }
+  
+  .upload-receipt__submit {
+    padding: var(--space-3) var(--space-4);
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+  
+  .upload-receipt__message {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-receipt {
+    padding: var(--space-3);
+  }
+  
+  .upload-receipt__file-label {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-2);
+    min-height: 60px;
+  }
+  
+  .upload-receipt__file-text {
+    font-size: 0.8rem;
+  }
+}

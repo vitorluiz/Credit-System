@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import './Register.css';
 
 /**
  * Registration form component. Allows a new user to create an account by
@@ -46,52 +47,99 @@ export default function Register() {
   }
 
   return (
-    <div className="container">
-      <div className="logo-container" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <img src="/LogoFlorais.png" alt="Logo Florais" style={{ maxWidth: '200px', height: 'auto' }} />
-      </div>
-      <h1>Criar conta</h1>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="name">Nome</label>
-        <input
-          id="name"
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          required
-        />
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <label htmlFor="phone">Telefone (WhatsApp)</label>
-        <div className="phone-input-container">
-          <span className="phone-prefix">+55</span>
-          <input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(formatPhone(e.target.value))}
-            placeholder="(XX) XXXXX-XXXX"
-            required
-          />
-        </div>
-        <button type="submit">Registrar</button>
-        {message && <div className="success">{message}</div>}
-        {error && <div className="error">{error}</div>}
-        {activationLink && (
-          <div className="info" style={{ marginTop: '0.75rem' }}>
-            Link de ativação (teste): <a href={activationLink}>Ativar conta</a>
+    <div className="register">
+      <div className="register__container">
+        {/* Header */}
+        <div className="register__header">
+          <div className="register__logo">
+            <img src="/img/LogoFloraisMin.svg" alt="Logo Florais" />
           </div>
-        )}
-        <div className="link">
-          Já possui conta? <Link to="/login">Entrar</Link>
+          <h1 className="register__title">Criar conta</h1>
+          <p className="register__subtitle">Preencha os dados para criar sua conta</p>
         </div>
-      </form>
+
+        {/* Form */}
+        <form className="register__form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="name" className="form-label">Nome completo</label>
+            <input
+              id="name"
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Digite seu nome completo"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email" className="form-label">Email</label>
+            <input
+              id="email"
+              type="email"
+              className="form-input"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phone" className="form-label">Telefone (WhatsApp)</label>
+            <div className="phone-input">
+              <span className="phone-input__prefix">+55</span>
+              <input
+                id="phone"
+                type="tel"
+                className="form-input phone-input__field"
+                value={phone}
+                onChange={e => setPhone(formatPhone(e.target.value))}
+                placeholder="(XX) XXXXX-XXXX"
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn--primary btn--full">
+            Criar conta
+          </button>
+
+          {/* Messages */}
+          {message && (
+            <div className="alert alert--success">
+              <div className="alert__icon">✅</div>
+              <div className="alert__content">{message}</div>
+            </div>
+          )}
+
+          {error && (
+            <div className="alert alert--error">
+              <div className="alert__icon">❌</div>
+              <div className="alert__content">{error}</div>
+            </div>
+          )}
+
+          {activationLink && (
+            <div className="alert alert--info">
+              <div className="alert__icon">ℹ️</div>
+              <div className="alert__content">
+                <strong>Link de ativação (teste):</strong>
+                <a href={activationLink} className="alert__link">Ativar conta</a>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="register__footer">
+            <p className="register__login-text">
+              Já possui conta? 
+              <Link to="/login" className="register__login-link">Entrar</Link>
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

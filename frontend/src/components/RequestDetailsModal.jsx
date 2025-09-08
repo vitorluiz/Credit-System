@@ -2,24 +2,87 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import logger from '../utils/logger';
 import UploadReceipt from './UploadReceipt';
+import './RequestDetailsModal.css';
 
 function PixDetails({ pixData }) {
   if (!pixData) return null;
   const qrSrc = pixData.qrCodeDataURL || pixData.qrCodeUrl;
   return (
-    <div className="pix-details-modal">
-      <h4>Detalhes do PIX</h4>
+    <div className="request-details-modal__pix-section">
+      <h4 className="request-details-modal__section-title">Detalhes do PIX</h4>
+      
       {qrSrc ? (
-        <img className="qr-image" src={qrSrc} alt="QR Code PIX" />
+        <div className="request-details-modal__qrcode-container">
+          <img 
+            className="request-details-modal__qrcode" 
+            src={qrSrc} 
+            alt="QR Code PIX" 
+          />
+        </div>
       ) : (
-        <div className="qr-fallback">QR indisponível no momento. Use o Copia e Cola abaixo.</div>
+        <div className="alert alert--warning">
+          <div className="alert__icon">⚠️</div>
+          <div className="alert__content">QR Code indisponível no momento. Use o código Copia e Cola abaixo.</div>
+        </div>
       )}
-      <label className="pix-label">Copia e Cola:</label>
-      <textarea className="pix-code-textarea" readOnly value={pixData.pixCode} rows="3"></textarea>
-      <div className="pix-actions">
-        <button className="btn-copy" onClick={() => navigator.clipboard.writeText(pixData.pixCode).then(() => alert('Copiado!'))}>
-          Copiar Código
-        </button>
+      
+      <div className="request-details-modal__pix-code-section">
+        <div className="request-details-modal__pix-code-header">
+          <div className="request-details-modal__pix-code-label">
+            <span className="request-details-modal__pix-code-icon">📋</span>
+            Código PIX
+          </div>
+          <div className="request-details-modal__pix-code-hint">
+            Clique para copiar
+          </div>
+        </div>
+        
+        <div 
+          className="request-details-modal__pix-code-container"
+          onClick={() => {
+            navigator.clipboard.writeText(pixData.pixCode).then(() => {
+              const container = document.querySelector('.request-details-modal__pix-code-container');
+              const hint = document.querySelector('.request-details-modal__pix-code-hint');
+              
+              container.classList.add('request-details-modal__pix-code-container--copied');
+              hint.textContent = '✅ Copiado com sucesso!';
+              hint.style.color = 'var(--color-success)';
+              
+              setTimeout(() => {
+                container.classList.remove('request-details-modal__pix-code-container--copied');
+                hint.textContent = 'Clique para copiar';
+                hint.style.color = '';
+              }, 3000);
+            }).catch(() => {
+              const textarea = document.createElement('textarea');
+              textarea.value = pixData.pixCode;
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textarea);
+              
+              const container = document.querySelector('.request-details-modal__pix-code-container');
+              const hint = document.querySelector('.request-details-modal__pix-code-hint');
+              
+              container.classList.add('request-details-modal__pix-code-container--copied');
+              hint.textContent = '✅ Copiado!';
+              hint.style.color = 'var(--color-success)';
+              
+              setTimeout(() => {
+                container.classList.remove('request-details-modal__pix-code-container--copied');
+                hint.textContent = 'Clique para copiar';
+                hint.style.color = '';
+              }, 2000);
+            });
+          }}
+        >
+          <div className="request-details-modal__pix-code-text">
+            {pixData.pixCode}
+          </div>
+          <div className="request-details-modal__pix-code-copy-icon">
+            📋
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -37,6 +100,7 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
   const [pixData, setPixData] = useState(null);
   const [showPix, setShowPix] = useState(false);
   const [isPixLoading, setIsPixLoading] = useState(false);
+  
   
   if (!request) return null;
   function handleBackdropClick(e) {
@@ -117,92 +181,167 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
   }
 
   return (
-    <div onClick={handleBackdropClick} className="details-backdrop">
-      <div className="details-modal">
-        <h2 className="details-title">Detalhes da Solicitação</h2>
-        <button onClick={onClose} className="details-close">×</button>
-        <div className="details-grid">
-          <div>
-            <strong>Pagador</strong>
-            <div>{payer_name}</div>
-            <div className="muted">CPF: {payer_cpf}</div>
-          </div>
-          <div>
-            <strong>Recebedor</strong>
-            <div>{receiver_name}</div>
-            <div className="muted">CPF: {receiver_cpf}</div>
-          </div>
-        </div>
-        <div className="details-row">
-          <strong>Valor</strong>
-          <div>{formatCurrency(amount)}</div>
-        </div>
-        <div className="details-row">
-          <strong>Forma de Pagamento</strong>
-          <div>{payment_method}</div>
-        </div>
-        <div className="details-row">
-          <strong>Status</strong>
-          <div className="status-pill" style={{ backgroundColor: getStatusColor(status) + '33', color: getStatusColor(status) }}>
-            {status}
-          </div>
-        </div>
-        {request.transaction_id && (
-          <div className="details-row">
-            <strong>ID da Transação (PIX):</strong>
-            <div className="muted"><code>{request.transaction_id}</code></div>
-          </div>
-        )}
-
-        {message && (
-          <div className={`flash ${message.includes('Erro') ? 'error' : 'success'}`}>
-            {message}
-          </div>
-        )}
-
-        {request.payment_method === 'PIX' && request.status === 'Pendente' && !showPix && (
-            <button onClick={handleRegeneratePix} disabled={isPixLoading} className="btn-primary" style={{marginTop: '1rem'}}>
-              {isPixLoading ? 'Carregando PIX...' : 'Visualizar / Gerar PIX'}
+    <div onClick={handleBackdropClick} className="request-details-modal">
+      <div className="request-details-modal__backdrop">
+        <div className="request-details-modal__container">
+          <div className="request-details-modal__header">
+            <h2 className="request-details-modal__title">Detalhes da Solicitação</h2>
+            <button onClick={onClose} className="request-details-modal__close">
+              <span className="request-details-modal__close-icon">×</span>
             </button>
-          )}
-
-          {showPix && <PixDetails pixData={pixData} />}
-
-          {request.payment_method === 'PIX' && request.status === 'Pendente' && (
-             <UploadReceipt 
-                requestId={request.id} 
-                onUploadSuccess={() => {
-                  setMessage('Comprovante enviado! O status será atualizado em breve.');
-                }}
-             />
-          )}
-
-        {canEditStatus && (
-          <div className="status-actions">
-            <strong>Alterar Status:</strong>
-            <div className="status-buttons">
-              {statusOptions.map(statusOption => (
-                <button
-                  key={statusOption}
-                  onClick={() => handleStatusUpdate(statusOption)}
-                  disabled={updating || statusOption === status}
-                  className="btn-status"
-                  style={{
-                    backgroundColor: statusOption === status ? '#bdc3c7' : getStatusColor(statusOption)
+          </div>
+          
+          <div className="request-details-modal__content">
+            <div className="request-details-modal__card">
+              <div className="request-details-modal__card-content">
+                {/* Pagador */}
+                <div className="request-details-modal__column">
+                  <div className="request-details-modal__column-header">
+                    <span className="request-details-modal__card-icon">👤</span>
+                    <h3 className="request-details-modal__card-title">Pagador</h3>
+                  </div>
+                  <div className="request-details-modal__field">
+                    <span className="request-details-modal__field-label">Nome</span>
+                    <span className="request-details-modal__field-value">{payer_name}</span>
+                  </div>
+                  <div className="request-details-modal__field">
+                    <span className="request-details-modal__field-label">CPF</span>
+                    <span className="request-details-modal__field-value">{payer_cpf}</span>
+                  </div>
+                </div>
+                
+                {/* Recebedor */}
+                <div className="request-details-modal__column">
+                  <div className="request-details-modal__column-header">
+                    <span className="request-details-modal__card-icon">🎯</span>
+                    <h3 className="request-details-modal__card-title">Recebedor</h3>
+                  </div>
+                  <div className="request-details-modal__field">
+                    <span className="request-details-modal__field-label">Nome</span>
+                    <span className="request-details-modal__field-value">{receiver_name}</span>
+                  </div>
+                  <div className="request-details-modal__field">
+                    <span className="request-details-modal__field-label">CPF</span>
+                    <span className="request-details-modal__field-value">{receiver_cpf}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="request-details-modal__summary">
+              <div className="request-details-modal__summary-item">
+                <span className="request-details-modal__summary-label">Valor</span>
+                <span className="request-details-modal__summary-value">{formatCurrency(amount)}</span>
+              </div>
+              <div className="request-details-modal__summary-item">
+                <span className="request-details-modal__summary-label">Forma de Pagamento</span>
+                <span className="request-details-modal__summary-value">{payment_method}</span>
+              </div>
+              <div className="request-details-modal__summary-item">
+                <span className="request-details-modal__summary-label">Status</span>
+                <span 
+                  className="request-details-modal__status-badge"
+                  style={{ 
+                    backgroundColor: getStatusColor(status) + '20', 
+                    color: getStatusColor(status),
+                    borderColor: getStatusColor(status) + '40'
                   }}
                 >
-                  {updating ? 'Atualizando...' : statusOption}
-                </button>
-              ))}
+                  {status}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+            
+            {request.transaction_id && (
+              <div className="request-details-modal__transaction-section">
+                <span className="request-details-modal__transaction-label">ID da Transação PIX:</span>
+                <span className="request-details-modal__transaction-value">{request.transaction_id}</span>
+              </div>
+            )}
 
-        {isAdmin && isStatusFinal && (
-          <div className="final-info">
-            <strong>ℹ️ Status Final:</strong> Este status não pode ser alterado pois a solicitação já foi finalizada.
+            {message && (
+              <div className={`alert ${message.includes('Erro') ? 'alert--error' : 'alert--success'}`}>
+                <div className="alert__icon">{message.includes('Erro') ? '❌' : '✅'}</div>
+                <div className="alert__content">{message}</div>
+              </div>
+            )}
+
+            {request.payment_method === 'PIX' && request.status === 'Pendente' && !showPix && (
+              <div className="request-details-modal__actions">
+                <button 
+                  onClick={handleRegeneratePix} 
+                  disabled={isPixLoading} 
+                  className="btn btn--primary"
+                >
+                  {isPixLoading ? 'Carregando PIX...' : 'Visualizar / Gerar PIX'}
+                </button>
+              </div>
+            )}
+
+            {showPix && <PixDetails pixData={pixData} />}
+
+            {request.payment_method === 'PIX' && request.status === 'Pendente' && (
+              <div className="request-details-modal__section">
+                <h4 className="request-details-modal__section-title">Enviar Comprovante</h4>
+                <UploadReceipt 
+                  requestId={request.id} 
+                  onUploadSuccess={() => {
+                    setMessage('Comprovante enviado! O status será atualizado em breve.');
+                  }}
+                />
+              </div>
+            )}
+
+            {request.receipt_url && (
+              <div className="request-details-modal__section">
+                <h4 className="request-details-modal__section-title">Comprovante</h4>
+                <div className="request-details-modal__receipt">
+                  <a 
+                    href={request.receipt_url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="btn btn--primary"
+                  >
+                    📄 Visualizar / Baixar
+                  </a>
+                  <span className="request-details-modal__receipt-type">{request.receipt_type}</span>
+                </div>
+              </div>
+            )}
+
+            {canEditStatus && (
+              <div className="request-details-modal__section">
+                <h4 className="request-details-modal__section-title">Alterar Status</h4>
+                <div className="request-details-modal__status-actions">
+                  {statusOptions.map(statusOption => (
+                    <button
+                      key={statusOption}
+                      onClick={() => handleStatusUpdate(statusOption)}
+                      disabled={updating || statusOption === status}
+                      className="btn btn--ghost request-details-modal__status-btn"
+                      style={{
+                        backgroundColor: statusOption === status ? 'var(--color-bg-light)' : getStatusColor(statusOption) + '20',
+                        color: statusOption === status ? 'var(--color-text-secondary)' : getStatusColor(statusOption),
+                        borderColor: getStatusColor(statusOption) + '40'
+                      }}
+                    >
+                      {updating ? 'Atualizando...' : statusOption}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isAdmin && isStatusFinal && (
+              <div className="alert alert--info">
+                <div className="alert__icon">ℹ️</div>
+                <div className="alert__content">
+                  <strong>Status Final:</strong> Este status não pode ser alterado pois a solicitação já foi finalizada.
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

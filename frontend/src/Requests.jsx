@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from './Layout.jsx';
 import RequestDetailsModal from './components/RequestDetailsModal.jsx';
+import MobileRequests from './components/Mobile/MobileRequests.jsx';
+import useMobile from './hooks/useMobile.js';
 import './Requests.css';
 
 /**
@@ -12,12 +14,18 @@ import './Requests.css';
  * information about the request.
  */
 export default function Requests() {
+  const { isMobile } = useMobile();
   const [requests, setRequests] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Use mobile component for mobile devices
+  if (isMobile) {
+    return <MobileRequests />;
+  }
 
   useEffect(() => {
     async function fetchData() {

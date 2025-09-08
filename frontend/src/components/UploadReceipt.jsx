@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import logger from '../utils/logger';
+import './UploadReceipt.css';
 
 export default function UploadReceipt({ requestId, onUploadSuccess }) {
   const [receiptFile, setReceiptFile] = useState(null);
@@ -40,22 +41,48 @@ export default function UploadReceipt({ requestId, onUploadSuccess }) {
   }
 
   return (
-    <div className="upload-section">
-      <h3 style={{ marginTop: 0 }}>📄 Enviar Comprovante</h3>
-      <p>Anexe o comprovante para agilizar a confirmação.</p>
-      <input 
-        type="file" 
-        accept="image/*,.pdf" 
-        onChange={(e) => setReceiptFile(e.target.files[0])} 
-      />
-      <button 
-        onClick={handleReceiptUpload} 
-        disabled={!receiptFile || uploading}
-      >
-        {uploading ? 'Enviando...' : 'Enviar Comprovante'}
-      </button>
+    <div className="upload-receipt">
+      <div className="upload-receipt__header">
+        <span className="upload-receipt__icon">📄</span>
+        <h3 className="upload-receipt__title">Enviar Comprovante</h3>
+      </div>
+      <p className="upload-receipt__description">Anexe o comprovante para agilizar a confirmação.</p>
+      
+      <div className="upload-receipt__form">
+        <div className="form-group">
+          <label className="form-label">Selecionar Arquivo</label>
+          <input 
+            type="file" 
+            accept="image/*,.pdf" 
+            onChange={(e) => setReceiptFile(e.target.files[0])}
+            className="form-input upload-receipt__file-input"
+            id="receipt-file"
+          />
+          <label htmlFor="receipt-file" className="upload-receipt__file-label">
+            <span className="upload-receipt__file-icon">📎</span>
+            <span className="upload-receipt__file-text">
+              {receiptFile ? receiptFile.name : 'Clique para selecionar um arquivo'}
+            </span>
+          </label>
+        </div>
+        
+        <button 
+          onClick={handleReceiptUpload} 
+          disabled={!receiptFile || uploading}
+          className="btn btn--primary upload-receipt__submit"
+        >
+          <span className="upload-receipt__submit-icon">
+            {uploading ? '⏳' : '📤'}
+          </span>
+          {uploading ? 'Enviando...' : 'Enviar Comprovante'}
+        </button>
+      </div>
+      
       {uploadMessage && (
-        <div className={uploadMessage.includes('✅') ? 'success' : 'error'}>
+        <div className={`upload-receipt__message ${uploadMessage.includes('✅') ? 'upload-receipt__message--success' : 'upload-receipt__message--error'}`}>
+          <span className="upload-receipt__message-icon">
+            {uploadMessage.includes('✅') ? '✅' : '❌'}
+          </span>
           {uploadMessage}
         </div>
       )}

@@ -5,6 +5,7 @@ TODO.md
 # Environment
 .env
 .env.*
+env-copia
 
 # Logs
 logs
@@ -36,6 +37,7 @@ coverage/
 *.pid
 *.seed
 *.tgz
+uploads/
 
 # Vite cache
 frontend/.vite/

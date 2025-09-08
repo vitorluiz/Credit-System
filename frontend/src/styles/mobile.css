@@ -1,0 +1,35 @@
+/* Mobile-first base styles */
+@media (max-width: 768px) {
+  :root { --spacing: 1rem; }
+  body { margin: 0; background: #f5f7fa; color: #333; }
+  .app-layout { display: flex; flex-direction: column; min-height: 100vh; }
+  .sidebar { width: 100%; display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid #eee; }
+  .logo { display: flex; align-items: center; gap: .5rem; width: 100%; }
+  .logo img { height: 28px; width: auto; }
+  .menu-toggle { margin-left: auto; background: none; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 1.1rem; }
+  .nav-inline { display: none; }
+  .mobile-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .mobile-backdrop.open { opacity: 1; pointer-events: auto; z-index: 998; }
+  .mobile-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 80%; max-width: 300px; background: #fff; box-shadow: 2px 0 10px rgba(0,0,0,.15); transform: translateX(-100%); transition: transform .2s; z-index: 999; padding: 1rem; }
+  .mobile-drawer.open { transform: translateX(0); }
+  .nav-drawer { display: flex; flex-direction: column; gap: .5rem; }
+  .nav-drawer a { padding: .5rem 0; color: #2a3f54; text-decoration: none; }
+  .main-content { flex: 1; padding: 1rem; overflow-y: auto; }
+
+  /* Forms & buttons */
+  form { display: flex; flex-direction: column; }
+  label { margin-top: .75rem; font-weight: 500; }
+  input, select, textarea { padding: .75rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+  button { width: 100%; padding: 1rem 1.25rem; border-radius: 8px; font-size: 1.1rem; }
+
+  /* Cards & lists */
+  .card { padding: .75rem; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .request-item { flex-direction: column; align-items: flex-start; gap: .5rem; }
+
+  /* Modal */
+  .details-modal { padding: 1rem; width: 92%; }
+  .details-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+  .btn-copy, .btn-primary { width: 100%; }
+}
+
+

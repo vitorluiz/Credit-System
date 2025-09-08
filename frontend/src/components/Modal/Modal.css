@@ -1,0 +1,90 @@
+/* ============================================
+   MODAL COMPONENT - Credit System
+   ============================================ */
+
+/* Modal sizes */
+.modal__content--sm {
+  max-width: 400px;
+}
+
+.modal__content--md {
+  max-width: 500px;
+}
+
+.modal__content--lg {
+  max-width: 700px;
+}
+
+.modal__content--xl {
+  max-width: 900px;
+}
+
+/* Modal animations */
+.modal {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.modal--open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal__backdrop {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.modal__backdrop--open {
+  opacity: 1;
+}
+
+.modal__content {
+  transform: scale(0.95) translateY(20px);
+  transition: transform var(--transition-base);
+}
+
+.modal--open .modal__content {
+  transform: scale(1) translateY(0);
+}
+
+/* Mobile optimizations */
+@media (max-width: 767px) {
+  .modal__content {
+    margin: var(--space-4);
+    max-height: calc(100vh - var(--space-8));
+  }
+  
+  .modal__content--sm,
+  .modal__content--md,
+  .modal__content--lg,
+  .modal__content--xl {
+    max-width: none;
+    width: 100%;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .modal__backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+  
+  .modal__content {
+    border: 2px solid var(--color-neutral-800);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modal__backdrop,
+  .modal__content {
+    transition: none;
+  }
+  
+  .modal--open .modal__content {
+    transform: none;
+  }
+}

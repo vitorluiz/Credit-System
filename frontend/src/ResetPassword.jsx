@@ -30,7 +30,7 @@ export default function ResetPassword() {
   return (
     <div className="container">
       <div className="logo-container" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <img src="/LogoFlorais.png" alt="Logo Florais" style={{ maxWidth: '200px', height: 'auto' }} />
+        <img src="/img/LogoFloraisMin.svg" alt="Logo Florais" style={{ maxWidth: '200px', height: 'auto' }} />
       </div>
       <h1>Esqueci minha senha</h1>
       <form onSubmit={handleSubmit}>
