@@ -7,7 +7,7 @@ import ResetPassword from './ResetPassword.jsx';
 import Activate from './Activate.jsx';
 import FirstAccess from './FirstAccess.jsx';
 import Dashboard from './Dashboard.jsx';
-import AdminDashboard from './AdminDashboard.jsx';
+import DesktopDashboard from './components/Desktop/DesktopDashboard.jsx';
 import Requests from './Requests.jsx';
 import NewRequest from './NewRequest.jsx';
 import PixGeneration from './PixGeneration.jsx';
@@ -32,7 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/activate" element={<Activate />} />
           <Route path="/first-access" element={<FirstAccess />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin-dashboard" element={<DesktopDashboard />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/new-request" element={<NewRequest />} />
           <Route path="/generate-pix" element={<PixGeneration />} />
