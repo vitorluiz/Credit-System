@@ -6,8 +6,8 @@ import RequestDetailsModal from '../RequestDetailsModal.jsx';
 import './DesktopDashboard.css';
 
 /**
- * Desktop Admin Dashboard component for screens larger than 768px
- * Features enhanced layout with administrative statistics and comprehensive request management
+ * Desktop Dashboard component for screens larger than 768px
+ * Features enhanced layout with user statistics and personal request management
  */
 export default function DesktopDashboard() {
   const [requests, setRequests] = useState([]);
@@ -34,8 +34,8 @@ export default function DesktopDashboard() {
         return;
       }
       try {
-        // Buscar TODAS as solicitações do sistema (visão administrativa)
-        const res = await axios.get('/api/requests?all=true', {
+        // Buscar apenas as solicitações do usuário logado
+        const res = await axios.get('/api/requests', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setRequests(res.data);
@@ -56,16 +56,12 @@ export default function DesktopDashboard() {
   }, [navigate]);
 
   function calculateStats(requests) {
-    // Calcular usuários únicos (baseado no user_id)
-    const uniqueUserIds = new Set(requests.map(r => r.user_id).filter(Boolean));
-    
     const stats = {
       total: requests.length,
       pending: requests.filter(r => r.status === 'Pendente').length,
       approved: requests.filter(r => r.status === 'Pago' || r.status === 'Aprovado').length,
       rejected: requests.filter(r => r.status === 'Rejeitado').length,
-      totalValue: requests.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0),
-      uniqueUsers: uniqueUserIds.size
+      totalValue: requests.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0)
     };
     setStats(stats);
   }
@@ -188,8 +184,8 @@ export default function DesktopDashboard() {
       <div className="desktop-dashboard">
         {/* Page Header */}
         <div className="page-header">
-          <h1 className="page-header__title">Painel Administrativo</h1>
-          <p className="page-header__subtitle">Visão geral de todas as solicitações do sistema</p>
+          <h1 className="page-header__title">Meu Dashboard</h1>
+          <p className="page-header__subtitle">Visão geral das suas solicitações de crédito</p>
         </div>
 
         {/* Statistics Cards */}
@@ -227,10 +223,10 @@ export default function DesktopDashboard() {
           </div>
 
           <div className="stat-card stat-card--secondary">
-            <div className="stat-card__icon">👥</div>
+            <div className="stat-card__icon">📈</div>
             <div className="stat-card__content">
-              <h3 className="stat-card__title">Usuários Únicos</h3>
-              <p className="stat-card__value">{stats.uniqueUsers || 0}</p>
+              <h3 className="stat-card__title">Taxa de Aprovação</h3>
+              <p className="stat-card__value">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%</p>
             </div>
           </div>
         </div>
@@ -282,9 +278,9 @@ export default function DesktopDashboard() {
         {/* Requests Table */}
         <div className="card">
           <div className="card__header">
-            <h2 className="card__title">Todas as Solicitações do Sistema</h2>
+            <h2 className="card__title">Minhas Solicitações</h2>
             <p className="card__subtitle">
-              {filteredRequests.length} de {requests.length} solicitações (visão administrativa)
+              {filteredRequests.length} de {requests.length} solicitações
             </p>
           </div>
           
@@ -313,7 +309,7 @@ export default function DesktopDashboard() {
                       <th>ID</th>
                       <th>Valor</th>
                       <th>Status</th>
-                      <th>Usuário</th>
+                      <th>Paciente</th>
                       <th>Data</th>
                       <th>Descrição</th>
                       <th>Ações</th>
@@ -328,7 +324,7 @@ export default function DesktopDashboard() {
                           {renderStatusBadge(request.status)}
                         </td>
                         <td className="table__user">
-                          {request.user_name || 'Usuário não identificado'}
+                          {request.receiver_name || 'Paciente não identificado'}
                         </td>
                         <td className="table__date">{formatDate(request.created_at)}</td>
                         <td className="table__description">
