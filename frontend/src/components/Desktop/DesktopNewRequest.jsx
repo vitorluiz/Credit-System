@@ -16,6 +16,7 @@ export default function DesktopNewRequest() {
   const [message, setMessage] = useState('');
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
@@ -29,6 +30,7 @@ export default function DesktopNewRequest() {
 
   useEffect(() => {
     loadPatients();
+    loadUserData();
   }, []);
 
   async function loadPatients() {
@@ -40,6 +42,24 @@ export default function DesktopNewRequest() {
       setPatients(res.data || []);
     } catch (err) {
       console.error('Error loading patients:', err);
+    }
+  }
+
+  async function loadUserData() {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserData(res.data);
+      // Preencher automaticamente os dados do pagador
+      setFormData(prev => ({
+        ...prev,
+        payer_name: res.data.name,
+        payer_cpf: res.data.cpf || ''
+      }));
+    } catch (err) {
+      console.error('Error loading user data:', err);
     }
   }
 
@@ -65,8 +85,8 @@ export default function DesktopNewRequest() {
     }
     
     if (step === 2) {
-      if (!formData.amount || !formData.payer_name) {
-        setError('Preencha todos os campos obrigatórios');
+      if (!formData.amount) {
+        setError('Preencha o valor da solicitação');
         return;
       }
       
@@ -94,18 +114,19 @@ export default function DesktopNewRequest() {
       const requestData = {
         amount: parseFloat(formData.amount),
         description: formData.description || 'Solicitação de crédito',
-        payer_name: formData.payer_name,
-        payer_cpf: formData.payer_cpf,
-        receiver_name: formData.receiver_name,
-        receiver_cpf: formData.receiver_cpf,
-        payment_method: 'PIX'
+        payerName: formData.payer_name,
+        payerCpf: formData.payer_cpf,
+        receiverName: formData.receiver_name,
+        receiverCpf: formData.receiver_cpf,
+        paymentMethod: 'PIX'
       };
 
       const res = await axios.post('/api/requests', requestData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setPixData(res.data);
+      // O backend retorna os dados PIX dentro de pixData
+      setPixData(res.data.pixData);
       setMessage('Solicitação criada com sucesso!');
       setStep(4);
     } catch (err) {
@@ -255,17 +276,17 @@ export default function DesktopNewRequest() {
               </div>
               
               <div className="form-section">
-                <h3 className="form-section__title">Pagador</h3>
+                <h3 className="form-section__title">Pagador (Você)</h3>
                 <div className="form-group">
-                  <label className="form-label">Nome Completo *</label>
+                  <label className="form-label">Nome Completo</label>
                   <input
                     type="text"
                     name="payer_name"
                     value={formData.payer_name}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="Nome do pagador"
-                    required
+                    className="form-input form-input--disabled"
+                    placeholder="Seu nome"
+                    disabled
+                    readOnly
                   />
                 </div>
                 <div className="form-group">
@@ -274,9 +295,10 @@ export default function DesktopNewRequest() {
                     type="text"
                     name="payer_cpf"
                     value={formData.payer_cpf}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="000.000.000-00"
+                    className="form-input form-input--disabled"
+                    placeholder="Seu CPF"
+                    disabled
+                    readOnly
                   />
                 </div>
               </div>
@@ -359,7 +381,7 @@ export default function DesktopNewRequest() {
                   </div>
                   <div className="pix-info__item">
                     <span className="pix-info__label">ID da Transação:</span>
-                    <span className="pix-info__value">{pixData.transaction_id}</span>
+                    <span className="pix-info__value">{pixData.transactionId}</span>
                   </div>
                 </div>
                 
@@ -367,17 +389,17 @@ export default function DesktopNewRequest() {
                   <label className="form-label">Código PIX (Copie e Cole)</label>
                   <div 
                     className="pix-code"
-                    onClick={() => copyToClipboard(pixData.pix_code)}
+                    onClick={() => copyToClipboard(pixData.pixCode)}
                     title="Clique para copiar"
                   >
-                    {pixData.pix_code}
+                    {pixData.pixCode}
                   </div>
                 </div>
                 
                 <div className="qrcode-container">
                   <label className="form-label">QR Code</label>
                   <div className="qrcode">
-                    <img src={pixData.qr_code} alt="QR Code PIX" />
+                    <img src={pixData.qrCodeDataURL} alt="QR Code PIX" />
                   </div>
                 </div>
               </div>
