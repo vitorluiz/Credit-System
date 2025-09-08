@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import './Activate.css';
 
 export default function Activate() {
   const location = useLocation();
@@ -52,22 +53,67 @@ export default function Activate() {
   };
 
   return (
-    <div className="container">
-      <div className="logo-container" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <img src="/img/LogoFloraisMin.svg" alt="Logo Florais" style={{ maxWidth: '200px', height: 'auto' }} />
-      </div>
-      <h1>{mode === 'reset' ? 'Redefinir Senha' : 'Ativar Conta'}</h1>
-      {message && <div className="success">{message}</div>}
-      {error && <div className="error">{error}</div>}
-      <form onSubmit={handleSubmit} style={{ maxWidth: '420px' }}>
-        <label htmlFor="newPassword">Senha</label>
-        <input id="newPassword" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-        <label htmlFor="confirmPassword">Confirmar Senha</label>
-        <input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-        <button type="submit">Salvar</button>
-      </form>
-      <div className="link" style={{ marginTop: '1rem' }}>
-        <Link to="/login">Voltar ao login</Link>
+    <div className="activate">
+      <div className="activate__container">
+        <div className="activate__logo">
+          <img src="/img/LogoFloraisMin.svg" alt="Logo Florais" />
+        </div>
+        
+        <h1 className="activate__title">
+          {mode === 'reset' ? 'Redefinir Senha' : 'Ativar Conta'}
+        </h1>
+        
+        {message && (
+          <div className="activate__message activate__message--success">
+            {message}
+          </div>
+        )}
+        
+        {error && (
+          <div className="activate__message activate__message--error">
+            {error}
+          </div>
+        )}
+        
+        <form className="activate__form" onSubmit={handleSubmit}>
+          <div className="activate__form-group">
+            <label htmlFor="newPassword" className="activate__label">
+              Senha
+            </label>
+            <input 
+              id="newPassword" 
+              type="password" 
+              value={newPassword} 
+              onChange={e => setNewPassword(e.target.value)} 
+              className="activate__input"
+              placeholder="Digite sua nova senha"
+              required 
+            />
+          </div>
+          
+          <div className="activate__form-group">
+            <label htmlFor="confirmPassword" className="activate__label">
+              Confirmar Senha
+            </label>
+            <input 
+              id="confirmPassword" 
+              type="password" 
+              value={confirmPassword} 
+              onChange={e => setConfirmPassword(e.target.value)} 
+              className="activate__input"
+              placeholder="Confirme sua nova senha"
+              required 
+            />
+          </div>
+          
+          <button type="submit" className="activate__button">
+            {mode === 'reset' ? 'Redefinir Senha' : 'Ativar Conta'}
+          </button>
+        </form>
+        
+        <div className="activate__link">
+          <Link to="/login">Voltar ao login</Link>
+        </div>
       </div>
     </div>
   );

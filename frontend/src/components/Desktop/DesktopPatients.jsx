@@ -45,15 +45,23 @@ export default function DesktopPatients() {
   }
 
   function formatName(value) {
-    return value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '').replace(/\s+/g, ' ').trim();
+    // Permitir apenas letras, espaços e acentos
+    // Remove caracteres especiais mas mantém espaços
+    return value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '').replace(/\s+/g, ' ');
   }
 
   function validateCPF(cpf) {
+    // Se CPF estiver vazio, é válido (campo opcional)
+    if (!cpf || cpf.trim() === '') return true;
+    
+    // Remover formatação para validar apenas os dígitos
     cpf = cpf.replace(/[^\d]/g, '');
     if (cpf.length !== 11) return false;
     
+    // Verificar se todos os dígitos são iguais
     if (/^(\d)\1{10}$/.test(cpf)) return false;
     
+    // Validar primeiro dígito verificador
     let sum = 0;
     for (let i = 0; i < 9; i++) {
       sum += parseInt(cpf[i]) * (10 - i);
@@ -62,6 +70,7 @@ export default function DesktopPatients() {
     if (remainder === 10 || remainder === 11) remainder = 0;
     if (remainder !== parseInt(cpf[9])) return false;
     
+    // Validar segundo dígito verificador
     sum = 0;
     for (let i = 0; i < 10; i++) {
       sum += parseInt(cpf[i]) * (11 - i);
@@ -81,7 +90,20 @@ export default function DesktopPatients() {
       setFormData(prev => ({ ...prev, [name]: formatted }));
     } else if (name === 'cpf') {
       const digitsOnly = value.replace(/\D/g, '');
-      setFormData(prev => ({ ...prev, [name]: digitsOnly }));
+      // Limitar a 11 dígitos
+      const limitedDigits = digitsOnly.slice(0, 11);
+      // Formatar automaticamente: 999.999.999-20
+      let formatted = limitedDigits;
+      if (limitedDigits.length > 3) {
+        formatted = limitedDigits.slice(0, 3) + '.' + limitedDigits.slice(3);
+      }
+      if (limitedDigits.length > 6) {
+        formatted = limitedDigits.slice(0, 3) + '.' + limitedDigits.slice(3, 6) + '.' + limitedDigits.slice(6);
+      }
+      if (limitedDigits.length > 9) {
+        formatted = limitedDigits.slice(0, 3) + '.' + limitedDigits.slice(3, 6) + '.' + limitedDigits.slice(6, 9) + '-' + limitedDigits.slice(9);
+      }
+      setFormData(prev => ({ ...prev, [name]: formatted }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -103,6 +125,15 @@ export default function DesktopPatients() {
     if (formData.cpf && !validateCPF(formData.cpf)) {
       setError('CPF inválido');
       return;
+    }
+    
+    // Validar email se fornecido
+    if (formData.email && formData.email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Email inválido');
+        return;
+      }
     }
 
     try {
@@ -276,7 +307,7 @@ export default function DesktopPatients() {
                     onChange={handleInputChange}
                     className="form-input"
                     placeholder="000.000.000-00"
-                    maxLength={11}
+                    maxLength={14}
                   />
                 </div>
                 
