@@ -251,6 +251,19 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
                 </span>
               </div>
             </div>
+
+            {/* Descrição da Solicitação */}
+            {request.description && (
+              <div className="request-details-modal__section">
+                <h4 className="request-details-modal__section-title">
+                  <span className="request-details-modal__card-icon">📝</span>
+                  Descrição da Solicitação
+                </h4>
+                <div className="request-details-modal__description">
+                  <p className="request-details-modal__description-text">{request.description}</p>
+                </div>
+              </div>
+            )}
             
             {request.transaction_id && (
               <div className="request-details-modal__transaction-section">

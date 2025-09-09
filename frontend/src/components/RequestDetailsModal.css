@@ -358,6 +358,23 @@
   font-style: italic;
 }
 
+/* Description */
+.request-details-modal__description {
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.request-details-modal__description-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  margin: 0;
+  font-style: italic;
+}
+
 /* PIX Section */
 .request-details-modal__pix-section {
   margin-top: var(--space-6);

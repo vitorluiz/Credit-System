@@ -99,6 +99,7 @@ async function ensureSchema() {
       payment_method VARCHAR(20) NOT NULL,
       status VARCHAR(20) NOT NULL DEFAULT 'Pendente',
       creator_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      description TEXT,
       receipt_data TEXT,
       receipt_type VARCHAR(10),
       receipt_uploaded_at TIMESTAMP,
@@ -173,6 +174,10 @@ async function ensureSchema() {
   await pool.query(`
     ALTER TABLE credit_requests
     ADD COLUMN IF NOT EXISTS receipt_url TEXT;
+  `);
+  await pool.query(`
+    ALTER TABLE credit_requests
+    ADD COLUMN IF NOT EXISTS description TEXT;
   `);
 }
 
@@ -688,9 +693,9 @@ app.post('/api/requests', authenticateRequest, async (req, res) => {
     const qrCodeDataURL = await pixService.getQRCodeDataURL(pixData.pixCode);
 
     const result = await pool.query(
-      `INSERT INTO credit_requests (payer_name, payer_cpf, receiver_name, receiver_cpf, amount, payment_method, creator_id, transaction_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [payerName, payerCpf, receiverName, receiverCpf, Number(amount), paymentMethod, req.user.id, pixData.transactionId]
+      `INSERT INTO credit_requests (payer_name, payer_cpf, receiver_name, receiver_cpf, amount, payment_method, creator_id, transaction_id, description)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+      [payerName, payerCpf, receiverName, receiverCpf, Number(amount), paymentMethod, req.user.id, pixData.transactionId, description || '']
     );
 
     const newRequestId = result.rows[0].id;
