@@ -181,7 +181,26 @@ export default function RequestDetailsModal({ request, onClose, onStatusUpdate }
   }
 
   return (
-    <div onClick={handleBackdropClick} className="request-details-modal">
+    <div 
+      onClick={handleBackdropClick} 
+      className="request-details-modal"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box'
+      }}
+    >
       <div className="request-details-modal__backdrop">
         <div className="request-details-modal__container">
           <div className="request-details-modal__header">

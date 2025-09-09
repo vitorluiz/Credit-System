@@ -20,7 +20,7 @@
 }
 
 /* Override any parent positioning */
-body .request-details-modal {
+html body .request-details-modal {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -35,6 +35,26 @@ body .request-details-modal {
   margin: 0 !important;
   padding: 0 !important;
   box-sizing: border-box !important;
+  transform: none !important;
+}
+
+/* Force modal to be centered regardless of parent */
+.request-details-modal[style*="position"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  transform: none !important;
 }
 
 .request-details-modal__backdrop {
