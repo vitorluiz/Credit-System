@@ -1,0 +1,234 @@
+/* Help.css - Página de Ajuda */
+
+/* Mobile View */
+.help-mobile {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-primary);
+  padding: var(--space-6);
+}
+
+.help-mobile__container {
+  text-align: center;
+  max-width: 400px;
+}
+
+.help-mobile h1 {
+  font-size: 2rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.help-mobile p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+/* Desktop View */
+.help {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Contact Grid */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-6);
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+}
+
+.contact-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.contact-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--color-primary-50);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.contact-item__content {
+  flex: 1;
+}
+
+.contact-item__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.contact-item__value {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-3) 0;
+  font-family: 'Courier New', monospace;
+}
+
+.contact-item__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.contact-item__link:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* System Information */
+.system-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.system-info__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.system-info__label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.system-info__value {
+  color: var(--color-text-secondary);
+  font-family: 'Courier New', monospace;
+  background: var(--color-primary-50);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+/* FAQ Section */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.faq-item {
+  padding: var(--space-6);
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.faq-item__question {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-3) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.faq-item__question::before {
+  content: "❓";
+  font-size: 1.2rem;
+}
+
+.faq-item__answer {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Card Icon */
+.card__icon {
+  font-size: 1.5rem;
+  margin-right: var(--space-2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .contact-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .contact-item__icon {
+    align-self: center;
+  }
+  
+  .system-info__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
+  .system-info__value {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .help-mobile__container {
+    padding: var(--space-4);
+  }
+  
+  .help-mobile h1 {
+    font-size: 1.5rem;
+  }
+  
+  .contact-item {
+    padding: var(--space-4);
+  }
+  
+  .faq-item {
+    padding: var(--space-4);
+  }
+}

@@ -187,7 +187,29 @@ export default function DesktopLayout({ children }) {
             </div>
           )}
 
-          <div className="desktop-sidebar__nav-section">
+          {/* Help Section - positioned above bottom section */}
+          <div className="desktop-sidebar__nav-section desktop-sidebar__nav-section--help">
+            <h3 className="desktop-sidebar__nav-title">Ajuda</h3>
+            <ul className="desktop-sidebar__nav-list">
+              <li className="desktop-sidebar__nav-item">
+                <Link 
+                  to="/help" 
+                  className="desktop-sidebar__nav-link"
+                  title="Central de Ajuda"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                  <span className="desktop-sidebar__nav-text">Central de Ajuda</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* System Section - positioned at bottom */}
+          <div className="desktop-sidebar__nav-section desktop-sidebar__nav-section--bottom">
             <h3 className="desktop-sidebar__nav-title">Sistema</h3>
             <ul className="desktop-sidebar__nav-list">
               <li className="desktop-sidebar__nav-item">

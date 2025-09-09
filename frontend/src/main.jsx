@@ -12,6 +12,7 @@ import Requests from './Requests.jsx';
 import NewRequest from './NewRequest.jsx';
 import PixGeneration from './PixGeneration.jsx';
 import Patients from './Patients.jsx';
+import Help from './Help.jsx';
 import NotFound from './NotFound.jsx';
 import { PatientProvider } from './context/PatientContext.jsx'; // Importar o Provider
 import './styles/design-system.css';
@@ -38,6 +39,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/new-request" element={<NewRequest />} />
           <Route path="/generate-pix" element={<PixGeneration />} />
           <Route path="/patients" element={<Patients />} />
+          <Route path="/help" element={<Help />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PatientProvider>
