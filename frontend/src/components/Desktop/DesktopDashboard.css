@@ -2,6 +2,7 @@
 
 .desktop-dashboard {
   min-height: 100vh;
+  padding:20px;
   background: linear-gradient(135deg, 
     var(--color-bg) 0%, 
     var(--color-bg-light) 25%, 

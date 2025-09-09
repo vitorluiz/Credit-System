@@ -155,6 +155,18 @@
   --color-text: #333333;
   --color-text-muted: #6c757d;
   --color-border: #e3e7ea;
+  
+  /* Text Colors */
+  --color-text-primary: #333333;
+  --color-text-secondary: #6c757d;
+  --color-text-placeholder: #9e9e9e;
+  
+  /* Primary Colors */
+  --color-primary: #008033;
+  --color-primary-dark: #006b2a;
+  
+  /* Input Colors */
+  --color-input-bg: #ffffff;
 }
 
 /* Dark Theme */
@@ -166,6 +178,18 @@
   --color-text: #ffffff;
   --color-text-muted: #b0b0b0;
   --color-border: #404040;
+  
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b0b0;
+  --color-text-placeholder: #808080;
+  
+  /* Primary Colors */
+  --color-primary: #4dc64d;
+  --color-primary-dark: #40a840;
+  
+  /* Input Colors */
+  --color-input-bg: #2d2d2d;
 
   /* Neutral Colors - Dark Theme */
   --color-neutral-50: #2d2d2d;
