@@ -68,6 +68,8 @@ html body .request-details-modal {
 
 .request-details-modal__container {
   position: relative;
+  margin-top: 100px;
+  margin:auto;
   background: #ffffff;
   border-radius: var(--radius-lg);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
