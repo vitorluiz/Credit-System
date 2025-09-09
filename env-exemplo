@@ -1,0 +1,32 @@
+
+# Configurações do Banco de Dados
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=credit_system
+PGHOST=db
+PGPORT=5432
+
+# JWT Secret para autenticação
+JWT_SECRET=change_me_to_something_very_secure
+
+# URL base da aplicação (frontend)
+APP_BASE_URL=http://localhost:3000
+
+# Configurações SMTP para envio de emails
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seuemail@gmail.com
+SMTP_PASS=senha_app_password
+SMTP_FROM="From seu email <seuemail@gmail.com>"
+SMTP_SECURE=false
+
+# Configurações do PgAdmin
+PGADMIN_DEFAULT_EMAIL=admin@admin.local.com
+PGADMIN_DEFAULT_PASSWORD=admin
+
+# PIX Estático - Chave PIX
+STATIC_PIX_KEY=sua_chave_pix
+MERCHANT_NAME="Nome do seu negócio"
+MERCHANT_CITY="Cidade do seu negócio"
+
+
