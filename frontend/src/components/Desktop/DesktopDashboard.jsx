@@ -11,11 +11,9 @@ import './DesktopDashboard.css';
  */
 export default function DesktopDashboard() {
   const [requests, setRequests] = useState([]);
-  const [filteredRequests, setFilteredRequests] = useState([]);
+  const [recentRequests, setRecentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
@@ -39,7 +37,9 @@ export default function DesktopDashboard() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setRequests(res.data);
-        setFilteredRequests(res.data);
+        // Pegar apenas as 3 últimas solicitações (mais recentes)
+        const recent = res.data.slice(0, 3);
+        setRecentRequests(recent);
         calculateStats(res.data);
         setLoading(false);
       } catch (err) {
@@ -78,15 +78,14 @@ export default function DesktopDashboard() {
     if (selectedRequest) {
       setSelectedRequest({ ...selectedRequest, status: newStatus });
       // Update the request in the list
-      setRequests(prev => prev.map(r => 
+      const updatedRequests = requests.map(r => 
         r.id === selectedRequest.id ? { ...r, status: newStatus } : r
-      ));
-      setFilteredRequests(prev => prev.map(r => 
-        r.id === selectedRequest.id ? { ...r, status: newStatus } : r
-      ));
-      calculateStats(requests.map(r => 
-        r.id === selectedRequest.id ? { ...r, status: newStatus } : r
-      ));
+      );
+      setRequests(updatedRequests);
+      // Atualizar as 3 últimas solicitações
+      const recent = updatedRequests.slice(0, 3);
+      setRecentRequests(recent);
+      calculateStats(updatedRequests);
     }
   }
 
@@ -128,25 +127,6 @@ export default function DesktopDashboard() {
     );
   }
 
-  function handleFilter() {
-    let filtered = [...requests];
-    
-    if (startDate) {
-      filtered = filtered.filter(r => new Date(r.created_at) >= new Date(startDate));
-    }
-    
-    if (endDate) {
-      filtered = filtered.filter(r => new Date(r.created_at) <= new Date(endDate));
-    }
-    
-    setFilteredRequests(filtered);
-  }
-
-  function clearFilter() {
-    setStartDate('');
-    setEndDate('');
-    setFilteredRequests(requests);
-  }
 
   if (loading) {
     return (
@@ -190,14 +170,6 @@ export default function DesktopDashboard() {
 
         {/* Statistics Cards */}
         <div className="stats-grid">
-          <div className="stat-card stat-card--primary">
-            <div className="stat-card__icon">📊</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Total de Solicitações</h3>
-              <p className="stat-card__value">{stats.total}</p>
-            </div>
-          </div>
-
           <div className="stat-card stat-card--warning">
             <div className="stat-card__icon">⏳</div>
             <div className="stat-card__content">
@@ -221,14 +193,6 @@ export default function DesktopDashboard() {
               <p className="stat-card__value">{formatCurrency(stats.totalValue)}</p>
             </div>
           </div>
-
-          <div className="stat-card stat-card--secondary">
-            <div className="stat-card__icon">📈</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Taxa de Aprovação</h3>
-              <p className="stat-card__value">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%</p>
-            </div>
-          </div>
         </div>
 
         {/* Actions Bar */}
@@ -237,69 +201,28 @@ export default function DesktopDashboard() {
             <span className="btn__icon">➕</span>
             Nova Solicitação
           </Link>
-          
-          <div className="desktop-dashboard__filters">
-            <div className="filter-group">
-              <label className="form-label">Data Inicial</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            
-            <div className="filter-group">
-              <label className="form-label">Data Final</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            
-            <button 
-              onClick={handleFilter}
-              className="btn btn--secondary"
-            >
-              Filtrar
-            </button>
-            
-            <button 
-              onClick={clearFilter}
-              className="btn btn--ghost"
-            >
-              Limpar
-            </button>
-          </div>
         </div>
 
         {/* Requests Table */}
         <div className="card">
           <div className="card__header">
-            <h2 className="card__title">Minhas Solicitações</h2>
+            <h2 className="card__title">Últimas Solicitações</h2>
             <p className="card__subtitle">
-              {filteredRequests.length} de {requests.length} solicitações
+              {recentRequests.length} de {requests.length} solicitações
             </p>
           </div>
           
           <div className="card__body">
-            {filteredRequests.length === 0 ? (
+            {recentRequests.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state__icon">📋</div>
                 <h3 className="empty-state__title">Nenhuma solicitação encontrada</h3>
                 <p className="empty-state__description">
-                  {requests.length === 0 
-                    ? 'Nenhuma solicitação foi criada no sistema ainda.'
-                    : 'Nenhuma solicitação corresponde aos filtros aplicados.'
-                  }
+                  Nenhuma solicitação foi criada no sistema ainda.
                 </p>
-                {requests.length === 0 && (
-                  <Link to="/new-request" className="btn btn--primary">
-                    Criar Primeira Solicitação
-                  </Link>
-                )}
+                <Link to="/new-request" className="btn btn--primary">
+                  Criar Primeira Solicitação
+                </Link>
               </div>
             ) : (
               <div className="table-container">
@@ -316,7 +239,7 @@ export default function DesktopDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRequests.map((request) => (
+                    {recentRequests.map((request) => (
                       <tr key={request.id} className="table__row">
                         <td className="table__id">#{request.id}</td>
                         <td className="table__amount">{formatCurrency(request.amount)}</td>
