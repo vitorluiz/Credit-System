@@ -356,12 +356,10 @@ export default function DesktopNewRequest() {
                 <span className="request-summary__label">Valor:</span>
                 <span className="request-summary__value">{formatCurrency(formData.amount)}</span>
               </div>
-              {formData.description && (
-                <div className="request-summary__item">
-                  <span className="request-summary__label">Descrição:</span>
-                  <span className="request-summary__value">{formData.description}</span>
-                </div>
-              )}
+              <div className="request-summary__item">
+                <span className="request-summary__label">Descrição:</span>
+                <span className="request-summary__value">{formData.description || 'Solicitação de crédito'}</span>
+              </div>
             </div>
             
             <div className="step-actions">
