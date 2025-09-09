@@ -1,7 +1,10 @@
 
 Readme/*
 TODO.md
-
+dev-rebuild.ps1
+dev-rebuild.sh
+README_ENV.md
+TODO.md
 
 # Environment
 .env
@@ -26,6 +29,7 @@ Thumbs.db
 node_modules/
 backend/node_modules/
 frontend/node_modules/
+uploads/*
 
 # Build outputs
 backend/build/
