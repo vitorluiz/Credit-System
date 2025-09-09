@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import DesktopLayout from './DesktopLayout.jsx';
 import RequestDetailsModal from '../RequestDetailsModal.jsx';
@@ -184,182 +185,186 @@ export default function DesktopDashboard() {
   }
 
   return (
-    <DesktopLayout>
-      <div className="desktop-dashboard">
-        {/* Page Header */}
-        <div className="page-header">
-          <h1 className="page-header__title">Painel Administrativo</h1>
-          <p className="page-header__subtitle">Visão geral de todas as solicitações do sistema</p>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="stats-grid">
-          <div className="stat-card stat-card--primary">
-            <div className="stat-card__icon">📊</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Total de Solicitações</h3>
-              <p className="stat-card__value">{stats.total}</p>
-            </div>
+    <>
+      <DesktopLayout>
+        <div className="desktop-dashboard">
+          {/* Page Header */}
+          <div className="page-header">
+            <h1 className="page-header__title">Painel Administrativo</h1>
+            <p className="page-header__subtitle">Visão geral de todas as solicitações do sistema</p>
           </div>
 
-          <div className="stat-card stat-card--warning">
-            <div className="stat-card__icon">⏳</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Pendentes</h3>
-              <p className="stat-card__value">{stats.pending}</p>
-            </div>
-          </div>
-
-          <div className="stat-card stat-card--success">
-            <div className="stat-card__icon">✅</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Aprovadas</h3>
-              <p className="stat-card__value">{stats.approved}</p>
-            </div>
-          </div>
-
-          <div className="stat-card stat-card--info">
-            <div className="stat-card__icon">💰</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Valor Total</h3>
-              <p className="stat-card__value">{formatCurrency(stats.totalValue)}</p>
-            </div>
-          </div>
-
-          <div className="stat-card stat-card--secondary">
-            <div className="stat-card__icon">👥</div>
-            <div className="stat-card__content">
-              <h3 className="stat-card__title">Usuários Únicos</h3>
-              <p className="stat-card__value">{stats.uniqueUsers || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions Bar */}
-        <div className="desktop-dashboard__actions">
-          <Link to="/new-request" className="btn btn--primary btn--lg">
-            <span className="btn__icon">➕</span>
-            Nova Solicitação
-          </Link>
-          
-          <div className="desktop-dashboard__filters">
-            <div className="filter-group">
-              <label className="form-label">Data Inicial</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            
-            <div className="filter-group">
-              <label className="form-label">Data Final</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            
-            <button 
-              onClick={handleFilter}
-              className="btn btn--secondary"
-            >
-              Filtrar
-            </button>
-            
-            <button 
-              onClick={clearFilter}
-              className="btn btn--ghost"
-            >
-              Limpar
-            </button>
-          </div>
-        </div>
-
-        {/* Requests Table */}
-        <div className="card">
-          <div className="card__header">
-            <h2 className="card__title">Todas as Solicitações do Sistema</h2>
-            <p className="card__subtitle">
-              {filteredRequests.length} de {requests.length} solicitações (visão administrativa)
-            </p>
-          </div>
-          
-          <div className="card__body">
-            {filteredRequests.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state__icon">📋</div>
-                <h3 className="empty-state__title">Nenhuma solicitação encontrada</h3>
-                <p className="empty-state__description">
-                  {requests.length === 0 
-                    ? 'Nenhuma solicitação foi criada no sistema ainda.'
-                    : 'Nenhuma solicitação corresponde aos filtros aplicados.'
-                  }
-                </p>
-                {requests.length === 0 && (
-                  <Link to="/new-request" className="btn btn--primary">
-                    Criar Primeira Solicitação
-                  </Link>
-                )}
+          {/* Statistics Cards */}
+          <div className="stats-grid">
+            <div className="stat-card stat-card--primary">
+              <div className="stat-card__icon">📊</div>
+              <div className="stat-card__content">
+                <h3 className="stat-card__title">Total de Solicitações</h3>
+                <p className="stat-card__value">{stats.total}</p>
               </div>
-            ) : (
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Valor</th>
-                      <th>Status</th>
-                      <th>Usuário</th>
-                      <th>Data</th>
-                      <th>Descrição</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRequests.map((request) => (
-                      <tr key={request.id} className="table__row">
-                        <td className="table__id">#{request.id}</td>
-                        <td className="table__amount">{formatCurrency(request.amount)}</td>
-                        <td className="table__status">
-                          {renderStatusBadge(request.status)}
-                        </td>
-                        <td className="table__user">
-                          {request.creator_name || 'Usuário não identificado'}
-                        </td>
-                        <td className="table__date">{formatDate(request.created_at)}</td>
-                        <td className="table__description">
-                          {request.description || 'Solicitação de crédito'}
-                        </td>
-                        <td className="table__actions">
-                          <button
-                            onClick={() => handleRequestClick(request)}
-                            className="btn btn--ghost btn--sm"
-                          >
-                            Ver Detalhes
-                          </button>
-                        </td>
+            </div>
+
+            <div className="stat-card stat-card--warning">
+              <div className="stat-card__icon">⏳</div>
+              <div className="stat-card__content">
+                <h3 className="stat-card__title">Pendentes</h3>
+                <p className="stat-card__value">{stats.pending}</p>
+              </div>
+            </div>
+
+            <div className="stat-card stat-card--success">
+              <div className="stat-card__icon">✅</div>
+              <div className="stat-card__content">
+                <h3 className="stat-card__title">Aprovadas</h3>
+                <p className="stat-card__value">{stats.approved}</p>
+              </div>
+            </div>
+
+            <div className="stat-card stat-card--info">
+              <div className="stat-card__icon">💰</div>
+              <div className="stat-card__content">
+                <h3 className="stat-card__title">Valor Total</h3>
+                <p className="stat-card__value">{formatCurrency(stats.totalValue)}</p>
+              </div>
+            </div>
+
+            <div className="stat-card stat-card--secondary">
+              <div className="stat-card__icon">👥</div>
+              <div className="stat-card__content">
+                <h3 className="stat-card__title">Usuários Únicos</h3>
+                <p className="stat-card__value">{stats.uniqueUsers || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions Bar */}
+          <div className="desktop-dashboard__actions">
+            <Link to="/new-request" className="btn btn--primary btn--lg">
+              <span className="btn__icon">➕</span>
+              Nova Solicitação
+            </Link>
+            
+            <div className="desktop-dashboard__filters">
+              <div className="filter-group">
+                <label className="form-label">Data Inicial</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="filter-group">
+                <label className="form-label">Data Final</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              
+              <button 
+                onClick={handleFilter}
+                className="btn btn--secondary"
+              >
+                Filtrar
+              </button>
+              
+              <button 
+                onClick={clearFilter}
+                className="btn btn--ghost"
+              >
+                Limpar
+              </button>
+            </div>
+          </div>
+
+          {/* Requests Table */}
+          <div className="card">
+            <div className="card__header">
+              <h2 className="card__title">Todas as Solicitações do Sistema</h2>
+              <p className="card__subtitle">
+                {filteredRequests.length} de {requests.length} solicitações (visão administrativa)
+              </p>
+            </div>
+            
+            <div className="card__body">
+              {filteredRequests.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state__icon">📋</div>
+                  <h3 className="empty-state__title">Nenhuma solicitação encontrada</h3>
+                  <p className="empty-state__description">
+                    {requests.length === 0 
+                      ? 'Nenhuma solicitação foi criada no sistema ainda.'
+                      : 'Nenhuma solicitação corresponde aos filtros aplicados.'
+                    }
+                  </p>
+                  {requests.length === 0 && (
+                    <Link to="/new-request" className="btn btn--primary">
+                      Criar Primeira Solicitação
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Usuário</th>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {filteredRequests.map((request) => (
+                        <tr key={request.id} className="table__row">
+                          <td className="table__id">#{request.id}</td>
+                          <td className="table__amount">{formatCurrency(request.amount)}</td>
+                          <td className="table__status">
+                            {renderStatusBadge(request.status)}
+                          </td>
+                          <td className="table__user">
+                            {request.creator_name || 'Usuário não identificado'}
+                          </td>
+                          <td className="table__date">{formatDate(request.created_at)}</td>
+                          <td className="table__description">
+                            {request.description || 'Solicitação de crédito'}
+                          </td>
+                          <td className="table__actions">
+                            <button
+                              onClick={() => handleRequestClick(request)}
+                              className="btn btn--ghost btn--sm"
+                            >
+                              Ver Detalhes
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Request Details Modal */}
-        {selectedRequest && (
-          <RequestDetailsModal
-            request={selectedRequest}
-            onClose={handleCloseModal}
-            onStatusUpdate={handleStatusUpdate}
-          />
-        )}
-      </div>
-    </DesktopLayout>
+        </div>
+      </DesktopLayout>
+      
+      {/* Request Details Modal - Rendered outside DesktopLayout using Portal */}
+      {selectedRequest && createPortal(
+        <RequestDetailsModal
+          request={selectedRequest}
+          onClose={handleCloseModal}
+          onStatusUpdate={handleStatusUpdate}
+        />,
+        document.body
+      )}
+    </>
   );
 }
